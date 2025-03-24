@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+      "target": "ESNext",
+      "module": "CommonJS",
+      "strict": true,
+      "outDir": "../dist/electron",
+      "rootDir": "./",
+      "resolveJsonModule": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "skipLibCheck": true,
+      "moduleResolution": "Node",
+      "types": ["node", "electron"]
+    },
+    "include": ["./**/*.ts"],
+    "exclude": ["../node_modules", "../dist"]
+  }
+  

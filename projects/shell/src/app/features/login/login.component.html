@@ -1,0 +1,21 @@
+<div class="flex items-center justify-center h-full w-full flex-col">
+    <p-card>
+        <form class="inline-flex flex-col space-y-2 min-w-xs" [formGroup]="_formGroup" (ngSubmit)="_onLogin()">
+            <h1 class="text-2xl font-semibold mb-4">Melde dich an</h1>
+            <div class="inline-flex flex-col space-y-1">
+                <label for="username">Username</label>
+                <input formControlName="username" pInputText id="username" [required]="true" #u>
+            </div>
+
+            <div class="inline-flex flex-col space-y-1">
+                <label for="password">Password</label>
+                <p-password styleClass="w-full" inputStyleClass="w-full" formControlName="password" inputId="password"
+                    [feedback]="false" [showClear]="p.value" #p />
+            </div>
+            <p-divider />
+            <div class="w-full flex justify-end">
+                <p-button [disabled]="_formGroup.invalid" (onClick)="_onLogin()" label="Login" />
+            </div>
+        </form>
+    </p-card>
+</div>

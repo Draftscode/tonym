@@ -1,0 +1,92 @@
+{
+  "name": "tonym",
+  "version": "0.0.0",
+  "main": "dist/electron/main.js",
+  "scripts": {
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test",
+    "electron": "electron electron",
+    "electron:build": "tsc -p electron/tsconfig.json",
+    "electron:start": "npm run electron:build && electron dist/electron/main.js",
+    "electron:dev": "concurrently \"ng serve\" \"wait-on http://localhost:4200 && npm run electron:start\"",
+    "electron:bundle": "npm run build && npm run electron:build && npx electron-builder"
+  },
+  "build": {
+    "appId": "com.myapp.electron",
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://drive.google.com/drive/folders/10M3InyNV5bUwMWNlF0pE3cjZB47ieKDH?usp=drive_link"
+      }
+    ],
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/shell/**/*",
+      "dist/electron/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "electron/",
+        "to": "electron"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/common": "^19.2.0",
+    "@angular/compiler": "^19.2.0",
+    "@angular/core": "^19.2.0",
+    "@angular/forms": "^19.2.0",
+    "@angular/platform-browser": "^19.2.0",
+    "@angular/platform-browser-dynamic": "^19.2.0",
+    "@angular/router": "^19.2.0",
+    "@primeng/themes": "^19.0.9",
+    "@tailwindcss/postcss": "^4.0.14",
+    "electron-log": "^5.3.2",
+    "electron-updater": "^6.3.9",
+    "express": "^4.21.2",
+    "postcss": "^8.5.3",
+    "primeicons": "^7.0.0",
+    "primeng": "^19.0.9",
+    "puppeteer": "^24.4.0",
+    "rxjs": "~7.8.0",
+    "tailwindcss-primeui": "^0.5.1",
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^19.2.3",
+    "@angular/cli": "^19.2.0",
+    "@angular/compiler-cli": "^19.2.0",
+    "@electron/remote": "^2.1.2",
+    "@types/electron": "^1.6.12",
+    "@types/jasmine": "~5.1.0",
+    "concurrently": "^9.1.2",
+    "electron": "^35.0.1",
+    "electron-builder": "^25.1.8",
+    "jasmine-core": "~5.6.0",
+    "karma": "~6.4.0",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-coverage": "~2.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "~2.1.0",
+    "typescript": "~5.7.2",
+    "wait-on": "^8.0.3"
+  }
+}

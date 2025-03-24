@@ -1,0 +1,9 @@
+{
+    "name": "my-electron-app",
+    "version": "1.0.0",
+    "main": "main.js",
+    "dependencies": {
+        "@electron/remote": "^2.0.8",
+        "electron": "^30.0.0"
+    }
+}
