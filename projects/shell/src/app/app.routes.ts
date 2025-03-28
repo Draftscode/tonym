@@ -6,7 +6,7 @@ export const routes: Routes = [{
     pathMatch: 'full',
     redirectTo: 'app',
 }, {
-    canActivate: [authGuard],
+    // canActivate: [authGuard],
     path: 'app',
     loadComponent: () => import('./features/app/app.component')
 }, {

@@ -1,5 +1,5 @@
 {
-    "name": "my-electron-app",
+    "name": "tonym",
     "version": "1.0.0",
     "main": "main.js",
     "dependencies": {

@@ -1,0 +1,11 @@
+{
+    "label": {
+        "create_pdf": "PDF Erstellen",
+        "type": "Was?",
+        "insurer": "Versicherer",
+        "scope": "Leistung",
+        "suggestion": "Vorschlag",
+        "oneTimePayment": "Einmalzahlung",
+        "contribution": "monatl. Beitrag"
+    }
+}

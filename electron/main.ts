@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdir, readdirSync } from 'fs';
 import { join } from 'path';
 import { startServer } from './server';
 
@@ -24,18 +24,21 @@ app.whenReady().then(() => {
         width: 1200,
         height: 800,
         webPreferences: {
+            preload: join(__dirname, 'preload.js'),
             nodeIntegration: false,
             contextIsolation: true
         },
     });
 
     // Start checking for updates
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+        log.error('Error checking for updates:', err);
+    });
 
     startServer(PORT);
 
     const url = IS_DEV
-        ? 'http://localhost:4200' // Development
+        ? 'http://localhost:4207' // Development
         : `file://${ROOT_PATH}/shell/browser/index.html`; // Production
 
     if (IS_DEV) {
@@ -73,5 +76,11 @@ app.on('window-all-closed', () => {
 
 ipcMain.on('restart_app', () => {
     autoUpdater.quitAndInstall();
+});
+
+ipcMain.handle('read_dir', () => {
+    const path = app.getPath('userData');
+    console.log('P',path)
+    return readdirSync(path, { recursive: true })
 });
 

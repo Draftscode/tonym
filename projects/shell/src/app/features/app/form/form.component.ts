@@ -1,27 +1,31 @@
-import { Component, effect, inject, signal } from "@angular/core";
+import { Component, computed, effect, inject, signal } from "@angular/core";
+import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { TranslateModule } from "@ngx-translate/core";
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from "primeng/button";
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { InputTextModule } from 'primeng/inputtext';
+import { ProgressBarModule } from 'primeng/progressbar';
 import { TableModule } from 'primeng/table';
 import { TextareaModule } from 'primeng/textarea';
 import { lastValueFrom } from "rxjs";
 import { PdfService } from "../../../data-access/pdf.service";
-import { ProgressBarModule } from 'primeng/progressbar';
 
 type SuggestionType = 'new' | 'discontinuation' | 'acquisition';
 
 type Header = {
     label: string;
     width?: number;
+    prefix?: string;
+    editor?: string;
 };
 
 @Component({
     host: { class: 'w-full h-full' },
     selector: 'app-form',
-    imports: [
+    imports: [AutoCompleteModule, TranslateModule,
         InputTextModule, TableModule, ProgressBarModule,
         TextareaModule, ReactiveFormsModule, CardModule,
         AutoCompleteModule, ButtonModule, DividerModule,
@@ -31,15 +35,20 @@ type Header = {
 export class FormComponent {
     protected readonly _suggestions = signal<string[]>([]);
     protected readonly _pdfService = inject(PdfService);
+    protected _suggs: SuggestionType[] = ['new', 'discontinuation', 'acquisition'];
 
     protected readonly _headers = signal<Header[]>([
         { label: 'type' },
         { label: 'insurer' },
         { label: 'scope', width: 35 },
-        { label: 'suggestion' },
-        { label: 'oneTimePayment' },
-        { label: 'contribution' }
+        { label: 'suggestion', editor: 'dropdown' },
+        { label: 'oneTimePayment', prefix: '€' },
+        { label: 'contribution', prefix: '€' }
     ]);
+
+    protected _search(query: string) {
+        this._suggs = ['new', 'discontinuation', 'acquisition'];
+    }
 
     protected readonly _formGroup = new FormGroup({
         tenant: new FormControl<string | null>(null, []),
@@ -65,6 +74,26 @@ export class FormComponent {
         ])
     });
 
+    private readonly _formChange = toSignal(this._formGroup.valueChanges.pipe(takeUntilDestroyed()));
+
+    protected readonly _totalOnce = computed(() => {
+        this._formChange();
+        const value = this._formGroup.controls.items.controls
+            .map(ctrl => ctrl.controls.oneTimePayment.value ?? 0)
+            .reduce((p, c) => p + c, 0);
+
+        return value;
+    });
+
+    protected readonly _totalContrib = computed(() => {
+        this._formChange();
+        const value = this._formGroup.controls.items.controls
+            .map(ctrl => ctrl.controls.contribution.value ?? 0)
+            .reduce((p, c) => p + c, 0);
+
+        return value;
+    });
+
     constructor() {
         effect(() => {
             const isLoading = this._pdfService.isLoading();
@@ -73,7 +102,8 @@ export class FormComponent {
             } else {
                 this._formGroup.enable();
             }
-        })
+        });
+
     }
 
     protected _onComplete(query: string) {

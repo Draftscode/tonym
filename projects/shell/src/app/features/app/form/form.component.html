@@ -1,5 +1,5 @@
 <p-card class="flex w-full h-full" styleClass="m-auto max-w-5xl" [style]="{'width':'100%'}">
-    <form [formGroup]="_formGroup" class="inline-flex flex-col space-y-2">
+    <form [formGroup]="_formGroup" class="inline-flex flex-col space-y-2 overflow-hidden w-full">
         @if(_pdfService.isLoading()) {
         <p-progressbar mode="indeterminate" [style]="{ height: '6px' }" />
         }
@@ -27,10 +27,18 @@
             <p-table [value]="_formGroup.controls.items.controls" [tableStyle]="{ 'min-width': '50rem', width:'100%' }">
                 <ng-template #header>
                     <tr>
-                        @for(header of _headers(); track header) {
-                        <th [style.width.%]="header.width ?? 15" [id]="'table-header-'+header.label">{{header.label}}
+                        <th [id]="'table-header-type'">{{'label.type'|translate}}
                         </th>
-                        }
+                        <th [id]="'table-header-insurer'">{{'label.insurer'|translate}}
+                        </th>
+                        <th [id]="'table-header-scope'">{{'label.scope'|translate}}
+                        </th>
+                        <th [id]="'table-header-suggestion'">{{'label.suggestion'|translate}}
+                        </th>
+                        <th [id]="'table-header-oneTimePayment'">{{'label.oneTimePayment'|translate}}
+                        </th>
+                        <th [style.width.px]="100" [id]="'table-header-contribution'">{{'label.contribution'|translate}}
+                        </th>
                         <th></th>
                     </tr>
                 </ng-template>
@@ -40,10 +48,23 @@
                         <td [pEditableColumn]="item[header.label]" [pEditableColumnField]="header.label">
                             <p-cellEditor>
                                 <ng-template #input>
+                                    @if(header.editor) {
+                                    @if(header.editor === 'dropdown') {
+                                    <p-autocomplete appendTo="body" (completeMethod)="_search($event.query)"
+                                        [completeOnFocus]="true" [dropdown]="true" [forceSelection]="true"
+                                        [formControlName]="header.label" [suggestions]="_suggs">
+                                    </p-autocomplete>
+                                    }
+                                    }
+                                    @else {
                                     <input class="w-full" pInputText type="text" [formControlName]="header.label" />
+                                    }
                                 </ng-template>
                                 <ng-template #output>
                                     {{ item.controls[header.label].value }}
+                                    @if(header.prefix) {
+                                    {{header.prefix}}
+                                    }
                                 </ng-template>
                             </p-cellEditor>
                         </td>
@@ -53,6 +74,14 @@
                             <p-button [disabled]="_pdfService.isLoading()" icon="pi pi-trash" severity="danger"
                                 (onClick)="_onRemoveRow(rowIndex)" />
                         </td>
+                    </tr>
+                </ng-template>
+                <ng-template #footer>
+                    <tr>
+                        <td colspan="4" class="font-semibold">Total</td>
+                        <td class="font-semibold">{{_totalOnce()}} €</td>
+                        <td class="font-semibold">{{_totalContrib()}} €</td>
+                        <td></td>
                     </tr>
                 </ng-template>
             </p-table>
@@ -66,7 +95,7 @@
         <p-divider />
         <div class="w-full flex justify-end">
             <p-button [disabled]="_pdfService.isLoading() || _formGroup.invalid" (onClick)="_onCreatePdf()"
-                icon="pi pi-plus" label="create pdf" />
+                icon="pi pi-plus" [label]="'label.create_pdf'|translate" />
         </div>
     </form>
 </p-card>

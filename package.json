@@ -1,6 +1,6 @@
 {
   "name": "tonym",
-  "version": "0.0.0",
+  "version": "0.0.4",
   "main": "dist/electron/main.js",
   "scripts": {
     "ng": "ng",
@@ -11,15 +11,17 @@
     "electron": "electron electron",
     "electron:build": "tsc -p electron/tsconfig.json",
     "electron:start": "npm run electron:build && electron dist/electron/main.js",
-    "electron:dev": "concurrently \"ng serve\" \"wait-on http://localhost:4200 && npm run electron:start\"",
-    "electron:bundle": "npm run build && npm run electron:build && npx electron-builder"
+    "electron:dev": "concurrently \"ng serve\" \"wait-on http://localhost:4207 && npm run electron:start\"",
+    "electron:bundle": "npm run build && npm run electron:build && dotenv -e .env -- npx electron-builder --publish always",
+    "check":"dotenv -e .env"
   },
   "build": {
-    "appId": "com.myapp.electron",
+    "appId": "com.toynm.electron",
     "publish": [
       {
-        "provider": "generic",
-        "url": "https://drive.google.com/drive/folders/10M3InyNV5bUwMWNlF0pE3cjZB47ieKDH?usp=drive_link"
+        "provider": "github",
+        "owner": "Draftscode",
+        "repo": "tonym"
       }
     ],
     "directories": {
@@ -56,11 +58,14 @@
     "@angular/platform-browser": "^19.2.0",
     "@angular/platform-browser-dynamic": "^19.2.0",
     "@angular/router": "^19.2.0",
+    "@ngx-translate/core": "^16.0.4",
+    "@ngx-translate/http-loader": "^16.0.1",
     "@primeng/themes": "^19.0.9",
     "@tailwindcss/postcss": "^4.0.14",
     "electron-log": "^5.3.2",
     "electron-updater": "^6.3.9",
     "express": "^4.21.2",
+    "ngx-electronyzer": "^19.1.0",
     "postcss": "^8.5.3",
     "primeicons": "^7.0.0",
     "primeng": "^19.0.9",
@@ -78,6 +83,8 @@
     "@types/electron": "^1.6.12",
     "@types/jasmine": "~5.1.0",
     "concurrently": "^9.1.2",
+    "dotenv": "^16.4.7",
+    "dotenv-cli": "^8.0.0",
     "electron": "^35.0.1",
     "electron-builder": "^25.1.8",
     "jasmine-core": "~5.6.0",
