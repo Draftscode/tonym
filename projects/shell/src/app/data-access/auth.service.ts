@@ -9,7 +9,6 @@ export type User = {
 
 class TUser {
     static parse(value: unknown): User | null {
-        console.log('PARSE')
         return {};
     }
 }

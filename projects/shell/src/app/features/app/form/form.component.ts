@@ -1,6 +1,7 @@
-import { Component, computed, effect, inject, signal } from "@angular/core";
+import { Component, computed, effect, inject, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { ActivatedRoute } from "@angular/router";
 import { TranslateModule } from "@ngx-translate/core";
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from "primeng/button";
@@ -10,8 +11,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { TableModule } from 'primeng/table';
 import { TextareaModule } from 'primeng/textarea';
-import { lastValueFrom } from "rxjs";
+import { distinctUntilChanged, filter, lastValueFrom, map } from "rxjs";
+import { ElectronService } from "../../../data-access/electron.service";
 import { PdfService } from "../../../data-access/pdf.service";
+import { Content } from "../../../utils/to-pdf";
 
 type SuggestionType = 'new' | 'discontinuation' | 'acquisition';
 
@@ -36,6 +39,9 @@ export class FormComponent {
     protected readonly _suggestions = signal<string[]>([]);
     protected readonly _pdfService = inject(PdfService);
     protected _suggs: SuggestionType[] = ['new', 'discontinuation', 'acquisition'];
+    private readonly _ngActiveRoute = inject(ActivatedRoute);
+    private readonly _filename = toSignal(this._ngActiveRoute.queryParams.pipe(map(q => q['filename']), filter(f => !!f), distinctUntilChanged()));
+    private readonly _electronService = inject(ElectronService);
 
     protected readonly _headers = signal<Header[]>([
         { label: 'type' },
@@ -51,9 +57,9 @@ export class FormComponent {
     }
 
     protected readonly _formGroup = new FormGroup({
-        tenant: new FormControl<string | null>(null, []),
-        firstname: new FormControl<string | null>(null, [Validators.required]),
-        lastname: new FormControl<string | null>(null, [Validators.required]),
+        // tenant: new FormControl<string | null>(null, []),
+        firstname: new FormControl<string | null>('Tony', [Validators.required]),
+        lastname: new FormControl<string | null>('Meuer', [Validators.required]),
         items: new FormArray([
             new FormGroup({
                 type: new FormControl('Krankentagegeld'),
@@ -104,6 +110,17 @@ export class FormComponent {
             }
         });
 
+        effect(() => {
+            const filename = this._filename();
+
+            console.log('GOT',filename)
+            if (!filename) { return; }
+            untracked(async () => {
+                const content = await this._electronService.readFile<Content>(filename);
+                this._formGroup.patchValue(content);
+            });
+        })
+
     }
 
     protected _onComplete(query: string) {
@@ -114,7 +131,7 @@ export class FormComponent {
     protected async _onCreatePdf() {
         if (this._formGroup.invalid) { return; }
 
-        const form = this._formGroup.getRawValue();
+        const form = this._formGroup.getRawValue() as Content;
         lastValueFrom(this._pdfService.createPdf(form));
     }
 

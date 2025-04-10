@@ -1,47 +1,62 @@
-import { Component, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { RouterLink, RouterOutlet } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
 import { MenuItem } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { MenuModule } from 'primeng/menu';
 import { MenubarModule } from 'primeng/menubar';
-import * as packageJson from './../../../../package.json';
+import { PopoverModule } from 'primeng/popover';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { TranslateService } from '@ngx-translate/core';
-declare global {
-  interface Window { electron: any; }
-}
+import { ToastModule } from 'primeng/toast';
+import { TooltipModule } from 'primeng/tooltip';
+import * as packageJson from './../../../../package.json';
+import { AppService } from './app.service';
+import { ElectronService } from './data-access/electron.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, MenubarModule, ButtonModule, ProgressSpinnerModule],
+  styleUrl: 'app.component.scss',
+  imports: [RouterOutlet, PopoverModule, DialogModule, TooltipModule, RouterLink, ToastModule, MenubarModule, MenuModule, ButtonModule, ProgressSpinnerModule],
   templateUrl: './app.component.html',
 })
 export class AppComponent {
   protected readonly version = packageJson.version;
-  protected readonly _isUpdateAvailable = signal(false);
-  protected readonly _isUpdateDownloaded = signal(false);
   private readonly _ngxTranslate = inject(TranslateService);
+  protected readonly _isSidebarOpen = signal<boolean>(false);
+  protected readonly _electronService = inject(ElectronService);
+  private readonly _appService = inject(AppService);
+  protected readonly _menuItems = signal<MenuItem[]>([]);
+
+  protected readonly _isLogVisible = signal<boolean>(false);
+  protected readonly _logs = signal<string | null>(null);
+
+  protected readonly _sidebarItems = computed(() => this._electronService.files().map(item => {
+    return {
+      label: item.name,
+      routerLink: ['app'],
+      icon: 'pi pi-file',
+      queryParams: { filename: item.name }
+    } as MenuItem;
+  }));
+
+  protected readonly _ping = toSignal(this._appService.ping());
 
   constructor() {
     this._ngxTranslate.use('de-DE');
-
-    window.electron.on('update_available', () => {
-      this._isUpdateAvailable.set(true);
-    });
-
-    window.electron.on('update_downloaded', () => {
-      this._isUpdateDownloaded.set(true);
-    });
-
-    window.electron.invoke('read_dir').then((a: any) => {
-      console.log('A', a)
-    }).catch((e: any) => {
-      console.error('E', e)
-    });
   }
 
-  protected _onRestartApp() {
-    window.electron.send('restart_app');
+  protected _toggleSidebar() {
+    this._isSidebarOpen.update(s => !s);
   }
 
-  protected readonly _menuItems = signal<MenuItem[]>([]);
+  protected _onDeleteFile(filename: string) {
+    this._electronService.deleteFile(filename);
+  }
+
+  protected async _onLogs() {
+    this._isLogVisible.set(true);
+    this._logs.set(await this._electronService.readLogs());
+  }
 }

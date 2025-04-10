@@ -1,0 +1,29 @@
+$sidebarWidth: 260px;
+
+/* Sidebar initial hidden state and transition for fade-in and push effect */
+.sidebar {
+    position: absolute;
+    opacity: 0;
+    width: $sidebarWidth;
+    transform: translateX(-100%);
+    /* Initially hide the sidebar off the screen */
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* Sidebar visible state */
+.sidebar.open {
+    opacity: 1;
+    transform: translateX(0);
+    /* Move the sidebar to its original position */
+}
+
+/* Main content with a push effect */
+.main-content {
+    transition: margin-left 0.5s ease;
+    /* Smooth push effect for the main content */
+}
+
+.main-content.is-shifted {
+    margin-left: $sidebarWidth;
+    /* This shifts the main content to the right */
+}

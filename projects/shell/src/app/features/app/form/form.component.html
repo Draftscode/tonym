@@ -3,13 +3,13 @@
         @if(_pdfService.isLoading()) {
         <p-progressbar mode="indeterminate" [style]="{ height: '6px' }" />
         }
-        <div>
+        <!-- <div>
             <div class="inline-flex flex-col space-y-1">
                 <label for="user" class="flex gap-1">Mandant</label>
                 <p-auto-complete formControlName="tenant" inputId="user" [dropdown]="true" [forceSelection]="true"
                     (completeMethod)="_onComplete($event.query)" [suggestions]="_suggestions()" />
             </div>
-        </div>
+        </div> -->
         <div class="inline-flex space-x-4">
             <div class="inline-flex flex-col space-y-1">
                 <label for="firstname">Firstname</label>
