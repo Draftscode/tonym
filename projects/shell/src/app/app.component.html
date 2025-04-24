@@ -1,8 +1,8 @@
 <div class="flex w-full relative h-full overflow-hidden">
-    <div class="flex-none flex h-full sidebar shadow-sm z-1 border-r-1 border-gray-50 bg-white flex-col"
+    <div class="flex-none flex h-full sidebar shadow-sm z-1 border-r-1 border-zinc-50 dark:border-zinc-600 bg-white flex-col"
         [class.open]="_isSidebarOpen()">
         <p-menu [model]="_sidebarItems()" class="flex justify-center w-full h-full"
-            styleClass="w-full h-full border-none!">
+            styleClass="w-full h-full border-none rounded-none">
             <ng-template #start>
                 <div class="flex w-full justify-between p-2 items-center">
                     <span class="inline-flex items-center gap-1 px-2 py-2">
@@ -11,11 +11,16 @@
                             <path d="..." fill="var(--primary-color)" />
                         </svg>
                         <span class="text-xl font-semibold">
-                            PRIME<span class="text-primary">APP</span>
+                            <img [src]="'./images/logo-raw'+(_themeService.isDark()?'-dark':'')+'.png'" height="100"
+                                width="auto" alt="Logo">
                         </span>
                     </span>
                     <p-button (onClick)="_toggleSidebar()" [text]="false" [rounded]="true" [outlined]="true"
                         icon="pi pi-times" />
+                </div>
+                <div class="w-full flex justify-end p-2">
+                    <p-button [disabled]="!fileService.isAuthenticated() || fileService.isLoading()" [outlined]="true"
+                        icon="pi pi-refresh" (onClick)="fileService.listFiles()" label="Aktualisieren" />
                 </div>
             </ng-template>
             <ng-template #submenuheader let-item>
@@ -41,14 +46,18 @@
     </div>
     <div class="grow w-full h-full flex flex-col overflow-hidden main-content" [class.is-shifted]="_isSidebarOpen()">
         <div class="w-full flex items-center justify-between">
-            <p-menubar class="w-full" styleClass="w-full bg-transparent! border-none!" [model]="_menuItems()">
+            <p-menubar class="w-full" styleClass="w-full bg-transparent! border-none! dark:bg-zinc-800! rounded-none"
+                [model]="_menuItems()">
                 <ng-template #start>
                     <div class="flex items-center space-x-1">
                         @if(!_isSidebarOpen()) {
                         <p-button (onClick)="_toggleSidebar()" [text]="true" icon="pi pi-bars" />
+                        <img [src]="'./images/logo-raw-no-text'+(_themeService.isDark()?'-dark':'')+'.png'"
+                            [style.height]="'28px'" alt="Logo">
                         }
                         @if(!_electronService.isUpdateDownloaded()) {
-                        <span [class.text-gray-300]="_electronService.isUpdateAvailable()">{{version}}</span>
+                        <span
+                            [class]="_electronService.isUpdateAvailable()? 'text-gray-300 dark:text-gray-600':'text-zinc-500'">{{version}}</span>
                         @if(_electronService.isUpdateAvailable()) {
                         <p-progress-spinner class="flex" ariaLabel="loading"
                             [style]="{ width: '20px', height: '20px' }" />
@@ -60,11 +69,26 @@
                     </div>
                 </ng-template>
                 <ng-template #end>
-                    <p-button pTooltip="Logs" [outlined]="true" size="small" severity="secondary" (onClick)="_onLogs()" icon="pi pi-file" />
+                    <div class="flex items-center space-x-1">
+
+                        @if(!fileService.isAuthenticated()) {
+                        <p-button pTooltip="Dropbox Login" tooltipPosition="bottom" [rounded]="true" [text]="true"
+                            size="small" (onClick)="fileService.authentication()" [icon]="'pi pi-sign-in'" />
+                        }
+
+                        <p-button pTooltip="Nachtmodus umschalten" tooltipPosition="bottom" [rounded]="true"
+                            [text]="true" size="small" (onClick)="_themeService.toggleDarkMode()"
+                            [icon]="'pi pi-'+ (_themeService.isDark() ? 'sun':'moon')" />
+
+                        <p-button pTooltip="Logs" tooltipPosition="bottom" size="small" [rounded]="true" [text]="true"
+                            (onClick)="_onLogs()" icon="pi pi-file" />
+                        <p-button pTooltip="Close App" tooltipPosition="bottom" [rounded]="true" [text]="true"
+                            size="small" (onClick)="_onAppClose()" icon="pi pi-times" />
+                    </div>
                 </ng-template>
             </p-menubar>
         </div>
-        <div class="h-full w-full overflow-auto p-4">
+        <div class="h-full w-full overflow-auto p-4 bg-zinc-100 dark:bg-zinc-900">
             <router-outlet />
         </div>
     </div>

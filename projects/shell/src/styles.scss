@@ -2,12 +2,9 @@
 
 @use "primeicons/primeicons.css";
 
-@plugin 'tailwindcss-primeui';
-@layer tailwind, primeng;
-
-@layer tailwind {
-  @import "tailwindcss";
-}
+@import "tailwindcss";
+@plugin "tailwindcss-primeui";
+@custom-variant dark (&:where(.p-dark, .p-dark *));
 
 :root {
   --font-primary: 'Inter', sans-serif;
@@ -18,7 +15,6 @@ html {
   font-size: 14px;
   line-height: 1.6;
   color: #333; // Adjust for readability
-  background-color: #f5f5f5; // Light grey for a clean UI
 }
 
 html,

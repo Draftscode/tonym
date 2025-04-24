@@ -1,6 +1,6 @@
 {
   "name": "tonym",
-  "version": "0.0.10",
+  "version": "0.0.16",
   "main": "dist/electron/main.js",
   "scripts": {
     "ng": "ng",
@@ -12,7 +12,8 @@
     "electron:build": "tsc -p electron/tsconfig.json",
     "electron:start": "npm run electron:build && electron dist/electron/main.js",
     "electron:dev": "concurrently \"ng serve\" \"wait-on http://localhost:4207 && npm run electron:start\"",
-    "electron:bundle": "npm run build && npm run electron:build && dotenv -e .env -- npx electron-builder --publish always",
+    "electron:prod": "npm run build --configuration=production --no-cache && npm run electron:build &&  npx electron-builder",
+    "electron:bundle": "npm run build --configuration=production --no-cache && npm run electron:build && dotenv -e .env -- npx electron-builder --publish always",
     "check": "dotenv -e .env"
   },
   "build": {
@@ -27,18 +28,7 @@
     "directories": {
       "output": "dist-electron"
     },
-    "files": [
-      "dist/shell/**/*",
-      "dist/electron/**/*",
-      "electron/**/*",
-      "package.json"
-    ],
-    "extraResources": [
-      {
-        "from": "electron/",
-        "to": "electron"
-      }
-    ],
+    "files": [],
     "win": {
       "target": "nsis"
     },
@@ -62,9 +52,9 @@
     "@ngx-translate/http-loader": "^16.0.1",
     "@primeng/themes": "^19.0.9",
     "@tailwindcss/postcss": "^4.0.14",
+    "dropbox": "^10.34.0",
     "electron-log": "^5.3.3",
     "electron-updater": "^6.3.9",
-    "express": "^4.21.2",
     "postcss": "^8.5.3",
     "primeicons": "^7.0.0",
     "primeng": "^19.0.9",

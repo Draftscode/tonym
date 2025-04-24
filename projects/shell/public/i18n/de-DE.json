@@ -6,6 +6,9 @@
         "scope": "Leistung",
         "suggestion": "Vorschlag",
         "oneTimePayment": "Einmalzahlung",
-        "contribution": "monatl. Beitrag"
+        "contribution": "monatl. Beitrag",
+        "party": "VN",
+        "nr": "Vers.Nr.",
+        "fromTo": "Laufzeit"
     }
 }

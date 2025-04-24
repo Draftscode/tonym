@@ -14,6 +14,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import * as packageJson from './../../../../package.json';
 import { AppService } from './app.service';
 import { ElectronService } from './data-access/electron.service';
+import { ThemeService } from './data-access/theme.service';
+import { FileService } from './data-access/file.service';
 
 @Component({
   selector: 'app-root',
@@ -28,18 +30,20 @@ export class AppComponent {
   protected readonly _electronService = inject(ElectronService);
   private readonly _appService = inject(AppService);
   protected readonly _menuItems = signal<MenuItem[]>([]);
+  protected readonly _themeService = inject(ThemeService);
+  protected readonly fileService = inject(FileService);
 
   protected readonly _isLogVisible = signal<boolean>(false);
   protected readonly _logs = signal<string | null>(null);
 
-  protected readonly _sidebarItems = computed(() => this._electronService.files().map(item => {
+  protected readonly _sidebarItems = computed(() => this.fileService.files().map(i => {
     return {
-      label: item.name,
+      label: i.name,
       routerLink: ['app'],
-      icon: 'pi pi-file',
-      queryParams: { filename: item.name }
+      icon: 'pi pi-fule',
+      queryParams: { filename: i.name }
     } as MenuItem;
-  }));
+  }))
 
   protected readonly _ping = toSignal(this._appService.ping());
 
@@ -52,11 +56,15 @@ export class AppComponent {
   }
 
   protected _onDeleteFile(filename: string) {
-    this._electronService.deleteFile(filename);
+    this.fileService.deleteFile(filename);
   }
 
   protected async _onLogs() {
     this._isLogVisible.set(true);
     this._logs.set(await this._electronService.readLogs());
+  }
+
+  protected _onAppClose() {
+    this._electronService.closeApp();
   }
 }

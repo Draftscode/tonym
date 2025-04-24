@@ -1,4 +1,5 @@
 import { Injectable, signal } from "@angular/core";
+import { from, lastValueFrom, Observable, of } from "rxjs";
 
 declare global {
     interface Window {
@@ -17,6 +18,21 @@ export type TFile = {
     createdAt: string;
     modifiedAt: string;
 }
+
+export type DropboxDataResponseError = {
+    ok: false;
+    cause: {
+        status: number;
+        message: string;
+    }
+}
+
+export type DropboxDataResponseSuccess<T> = {
+    ok: true;
+    data: T;
+}
+
+export type DropboxDataResponse<T> = DropboxDataResponseError | DropboxDataResponseSuccess<T>;
 
 @Injectable({ providedIn: 'root' })
 export class ElectronService {
@@ -38,6 +54,14 @@ export class ElectronService {
 
     restartApp() {
         window.electron.send('restart_app');
+    }
+
+    closeApp() {
+        window.electron.send('close_app');
+    }
+
+    handle<T, D = unknown>(path: string, ...contents: D[]): Observable<T> {
+        return from(window.electron.invoke<T>(path, ...contents));
     }
 
     async readDir() {

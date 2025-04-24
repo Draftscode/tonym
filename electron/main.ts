@@ -4,7 +4,8 @@ import { autoUpdater } from 'electron-updater';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { registerFileHandler } from './file.handle';
-import { startServer } from './server';
+import { registerPdfHandler } from './pdf';
+import { registerDropboxHandler } from './dropbox';
 
 
 let mainWindow: BrowserWindow | null;
@@ -36,6 +37,8 @@ app.whenReady().then(() => {
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
+        titleBarStyle: 'default',
+        // titleBarStyle: 'hidden',
         webPreferences: {
             preload: join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -43,20 +46,22 @@ app.whenReady().then(() => {
         },
     });
 
+
+
     // Start checking for updates
     autoUpdater.checkForUpdatesAndNotify().catch((err) => {
         log.error('Error checking for updates:', err);
     });
 
-    startServer(PORT);
-
     const url = IS_DEV
         ? 'http://localhost:4207' // Development
         : `file://${ROOT_PATH}/shell/browser/index.html`; // Production
 
-    if (IS_DEV) {
+    mainWindow.removeMenu();
 
+    if (IS_DEV) {
         mainWindow.webContents.openDevTools(); // 👈 Opens DevTools on start
+    } else {
     }
 
     mainWindow.loadURL(url);
@@ -80,6 +85,10 @@ app.whenReady().then(() => {
             mainWindow.webContents.send('update_downloaded');
         }
     });
+
+    registerDropboxHandler();
+    registerPdfHandler();
+    registerFileHandler();
 });
 
 app.on('window-all-closed', () => {
@@ -91,4 +100,7 @@ ipcMain.on('restart_app', () => {
     autoUpdater.quitAndInstall();
 });
 
-registerFileHandler();
+
+ipcMain.on('close_app', () => {
+    app.quit();
+});
