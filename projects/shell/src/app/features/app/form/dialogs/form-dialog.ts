@@ -7,6 +7,7 @@ import { DatePickerModule } from "primeng/datepicker";
 import { DividerModule } from "primeng/divider";
 import { DropdownModule } from "primeng/dropdown";
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { InputNumber } from "primeng/inputnumber";
 import { InputTextModule } from "primeng/inputtext";
 
 export type FormArrayType = {
@@ -35,7 +36,8 @@ export type FormType = {
     standalone: true,
     selector: 'form-dialog',
     templateUrl: 'form-dialog.html',
-    imports: [ReactiveFormsModule, ButtonModule, AutoCompleteModule, DividerModule, InputTextModule, DropdownModule, DatePickerModule, TranslateModule]
+    imports: [ReactiveFormsModule, ButtonModule, InputNumber, AutoCompleteModule,
+        DividerModule, InputTextModule, DropdownModule, DatePickerModule, TranslateModule]
 })
 export class FormDialogComponent {
     private readonly pDialogRef = inject<DynamicDialogRef<FormDialogComponent>>(DynamicDialogRef);
@@ -73,7 +75,9 @@ export class FormDialogComponent {
     protected close() {
         if (this._formGroup.invalid) { return; }
 
+
         const values = this._formGroup.getRawValue();
+
         this.pDialogRef.close({
             type: 'manually',
             data: values,

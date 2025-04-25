@@ -1,0 +1,11 @@
+<form [formGroup]="formGroup" (ngSubmit)="onClose()">
+
+    <div class="inline-flex flex-col">
+        <label for="groupName">Name der Gruppe</label>
+        <input pInputText formControlName="name" id="groupname" />
+    </div>
+    <p-divider />
+    <div class="flex justify-end">
+        <p-button label="Speichern" (onClick)="onClose()" />
+    </div>
+</form>

@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, computed, effect, inject, signal, untracked } from "@angular/core";
-import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
+import { ChangeDetectorRef, Component, effect, inject, signal, untracked } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
 import { TranslateModule } from "@ngx-translate/core";
@@ -18,7 +18,10 @@ import { FileService } from "../../../data-access/file.service";
 import { PdfService } from "../../../data-access/pdf.service";
 import { Content } from "../../../utils/to-pdf";
 import { CDatePipe } from "./c-date.pipe";
-import { FormDialogComponent } from "./form-dialog";
+import { FormDialogComponent } from "./dialogs/form-dialog";
+import { TotalPipe } from "./total.pipe";
+import { DialogModule } from "primeng/dialog";
+import { GroupNameDialogComponent } from "./dialogs/group-name.dialog";
 
 type Header = {
     label: string;
@@ -39,6 +42,11 @@ export type FormArrayType = {
     type: FormControl<string | null>;
 }
 
+export type FormList = {
+    items: FormArray<FormGroup<FormArrayType>>;
+    name: FormControl<string | null>;
+}
+
 export type FormType = {
     zipCode: FormControl<string | null>;
     streetNo: FormControl<string | null>;
@@ -46,15 +54,15 @@ export type FormType = {
     city: FormControl<string | null>;
     firstname: FormControl<string | null>;
     lastname: FormControl<string | null>;
-    items: FormArray<FormGroup<FormArrayType>>;
+    groups: FormArray<FormGroup<FormList>>;
 }
 
 @Component({
     host: { class: 'w-full h-full' },
     selector: 'app-form',
     imports: [AutoCompleteModule, TranslateModule, DatePickerModule,
-        InputTextModule, TableModule, ProgressBarModule,
-        TextareaModule, ReactiveFormsModule, CardModule,
+        InputTextModule, TableModule, ProgressBarModule, DialogModule,
+        TextareaModule, ReactiveFormsModule, CardModule, TotalPipe,
         AutoCompleteModule, ButtonModule, DividerModule, CDatePipe
     ],
     providers: [CDatePipe],
@@ -72,14 +80,18 @@ export class FormComponent {
     private readonly fileService = inject(FileService);
 
     protected readonly _formGroup = new FormGroup<FormType>({
-        // tenant: new FormControl<string | null>(null, []),
         firstname: new FormControl<string | null>(null, [Validators.required]),
         lastname: new FormControl<string | null>(null, [Validators.required]),
-        items: new FormArray<FormGroup<FormArrayType>>([]),
         street: new FormControl<string | null>(null),
         zipCode: new FormControl<string | null>(null),
         city: new FormControl<string | null>(null),
         streetNo: new FormControl<string | null>(null),
+        groups: new FormArray([
+            new FormGroup({
+                name: new FormControl('Gruppe 1'),
+                items: new FormArray<FormGroup<FormArrayType>>([]),
+            }),
+        ]),
     });
 
     protected readonly _headers = signal<Header[]>([
@@ -97,25 +109,36 @@ export class FormComponent {
     protected _search(query: string) {
         this._suggs = ['Neu', 'Einstellung', 'Übernahme'];
     }
-    private readonly _formChange = toSignal(this._formGroup.valueChanges.pipe(takeUntilDestroyed()));
 
-    protected readonly _totalOnce = computed(() => {
-        this._formChange();
-        const value = this._formGroup.controls.items.controls
-            .map(ctrl => ctrl.controls.oneTimePayment.value ? parseFloat(`${ctrl.controls.oneTimePayment.value}`) : 0)
-            .reduce((p, c) => p + c, 0);
+    protected onRemoveGroup(groupIndex: number) {
+        this._formGroup.controls.groups.removeAt(groupIndex);
+    }
 
-        return value;
-    });
+    protected async onEditGroup(groupIndex: number) {
+        const ref = this.pDialog.open(GroupNameDialogComponent, {
+            closable: true,
+            header: 'Guppe bearbeiten',
+            data: {
+                name:
+                    this._formGroup.controls.groups.at(groupIndex).controls.name.value,
+            }
+        });
 
-    protected readonly _totalContrib = computed(() => {
-        this._formChange();
-        const value = this._formGroup.controls.items.controls
-            .map(ctrl => ctrl.controls.contribution.value ? parseFloat(`${ctrl.controls.contribution.value}`) : 0)
-            .reduce((p, c) => p + c, 0);
+        const result = await lastValueFrom(ref.onClose.pipe(take(1)));
 
-        return value;
-    });
+        if (result?.type === 'manually') {
+            this._formGroup.controls.groups.at(groupIndex).patchValue({ name: result.data?.name ?? '' });
+            this.ngCdr.markForCheck();
+        }
+    }
+
+    protected onAddGroup() {
+        const group = new FormGroup({
+            name: new FormControl<string | null>('Neue Gruppe'),
+            items: new FormArray<FormGroup<FormArrayType>>([]),
+        });
+        this._formGroup.controls.groups.insert(0, group);
+    }
 
     constructor() {
         effect(() => {
@@ -149,32 +172,34 @@ export class FormComponent {
         if (this._formGroup.invalid) { return; }
 
         const form = this._formGroup.getRawValue() as Content;
-        form.items.forEach(item => {
-            item.contribution = parseFloat(`${item.contribution}`),
-                item.oneTimePayment = parseFloat(`${item.oneTimePayment}`),
-                item.fromTo = this.cDatePipe.transform(item.fromTo, 'dd.MM.YYYY');
-        })
+        form.groups.forEach(group => {
+            group.items.forEach(item => {
+                item.contribution = parseFloat(`${item.contribution}`),
+                    item.oneTimePayment = parseFloat(`${item.oneTimePayment}`),
+                    item.fromTo = this.cDatePipe.transform(item.fromTo, 'dd.MM.YYYY');
+            });
+        });
 
         lastValueFrom(this._pdfService.createPdf(form));
     }
 
-    protected _onRemoveRow(index: number) {
-        this._formGroup.controls.items.removeAt(index);
+    protected _onRemoveRow(groupIndex: number, index: number) {
+        this._formGroup.controls.groups.at(groupIndex).controls.items.removeAt(index);
     }
 
-    protected async onEditRow(rowIndex: number) {
+    protected async onEditRow(groupIndex: number, rowIndex: number) {
         const ref = this.pDialog.open(
             FormDialogComponent,
             {
-                focusOnShow: false,
-                data: this._formGroup.controls.items.value[rowIndex],
+                header: 'Zeile bearbeiten',
+                data: this._formGroup.controls.groups.at(groupIndex).controls.items.value[rowIndex],
                 closable: true,
             }
         );
 
         const result = await lastValueFrom(ref.onClose.pipe(take(1)));
         if (result?.type === 'manually') {
-            const control = this._formGroup.controls.items.at(rowIndex);
+            const control = this._formGroup.controls.groups.at(groupIndex).controls.items.at(rowIndex);
             control.patchValue({
                 nr: result.data.nr,
                 fromTo: result.data.fromTo,
@@ -190,33 +215,35 @@ export class FormComponent {
         }
     }
 
-    protected async _onAddRow() {
+    protected async _onAddRow(groupIndex: number) {
         const ref = this.pDialog.open(
             FormDialogComponent,
             {
-                focusOnShow: false,
                 data: null,
+                header: 'Zeile hinzufügen',
                 closable: true,
             }
         );
 
-        const result = await lastValueFrom(ref.onClose.pipe(take(1)));
-        if (result?.type === 'manually') {
+        ref.onClose.pipe(take(1)).subscribe(result => {
+            if (result?.type === 'manually') {
 
-            const control = this._formGroup.controls.items;
-            control.push(new FormGroup<FormArrayType>({
-                nr: new FormControl<string | null>(result.data.nr),
-                fromTo: new FormControl<string | null>(result.data.fromTo),
-                party: new FormControl<string | null>(result.data.party),
-                type: new FormControl<string | null>(result.data.type),
-                insurer: new FormControl<string | null>(result.data.insurer),
-                scope: new FormControl<string | null>(result.data.scope),
-                suggestion: new FormControl<string | null>(result.data.suggestion),
-                oneTimePayment: new FormControl<number>(result.data.oneTimePayment),
-                contribution: new FormControl<number>(result.data.contribution),
-            }))
-            this.ngCdr.markForCheck();
-        }
+                const control = this._formGroup.controls.groups.at(groupIndex).controls.items;
+
+                control.push(new FormGroup<FormArrayType>({
+                    nr: new FormControl<string | null>(result.data.nr),
+                    fromTo: new FormControl<string | null>(result.data.fromTo),
+                    party: new FormControl<string | null>(result.data.party),
+                    type: new FormControl<string | null>(result.data.type),
+                    insurer: new FormControl<string | null>(result.data.insurer),
+                    scope: new FormControl<string | null>(result.data.scope),
+                    suggestion: new FormControl<string | null>(result.data.suggestion),
+                    oneTimePayment: new FormControl<number>(result.data.oneTimePayment),
+                    contribution: new FormControl<number>(result.data.contribution),
+                }))
+                this.ngCdr.markForCheck();
+            }
+        });
 
 
     }

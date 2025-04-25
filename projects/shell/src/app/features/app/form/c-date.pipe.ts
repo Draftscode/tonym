@@ -1,5 +1,5 @@
 import { DatePipe } from "@angular/common";
-import { inject, Pipe, PipeTransform } from "@angular/core";
+import { Pipe, PipeTransform } from "@angular/core";
 
 @Pipe({
     name: 'cDate',
@@ -11,7 +11,6 @@ export class CDatePipe extends DatePipe implements PipeTransform {
         // const formattedDate = super.transform(value, format, timezone, locale);
         // do other formatting and return the value
         if (!value) { return ''; }
-        console.log('V', value)
         const start = new Date(value[0]);
         const end = new Date(value[1]);
 

@@ -22,8 +22,6 @@ export class PdfService {
         return this._electronService.handle<Uint8Array<ArrayBufferLike>>('api/pdf', html).pipe(
             finalize(() => this.isLoading.set(false)),
             tap(response => {
-                console.log(response)
-
                 this._electronService.writeFile(`${contents.firstname.toLowerCase()}_-_${contents.lastname.toLowerCase()}`, contents);
                 this._fileService.writeFile(`${contents.firstname.toLowerCase()}_-_${contents.lastname.toLowerCase()}`, contents);
                 this._pMessage.add({ closable: true, detail: 'Deine Pdf wurde  erfolgreich erstellt', summary: 'Pdf Erstellen', life: 100_000, severity: 'success' });

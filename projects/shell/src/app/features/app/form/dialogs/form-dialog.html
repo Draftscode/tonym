@@ -1,4 +1,4 @@
-<form [formGroup]="_formGroup" class="inline-flex flex-col space-y-2 overflow-hidden w-full">
+<form [formGroup]="_formGroup" class="inline-flex flex-col space-y-2 overflow-hidden w-full" (ngSubmit)="close()">
 
     <div class="inline-flex flex-col">
         <label for="type">Produkt</label>
@@ -30,20 +30,21 @@
         <p-datepicker inputId="fromTo" dateFormat="dd.mm.yy" appendTo="body" formControlName="fromTo"
             selectionMode="range" [readonlyInput]="false" />
     </div>
+
     <div class="flex gap-2">
         <div class="inline-flex flex-col">
             <label for="oneTimePayment">Einmalig</label>
-            <input id="oneTimePayment" pInputText formControlName="oneTimePayment" />
+            <p-inputnumber [minFractionDigits]="2" [maxFractionDigits]="2" inputId="oneTimePayment" mode="decimal" formControlName="oneTimePayment" />
         </div>
         <div class="inline-flex flex-col">
             <label for="contribution">Beitrag</label>
-            <input id="contribution" pInputText formControlName="contribution" />
+            <p-inputnumber [minFractionDigits]="2" [maxFractionDigits]="2" inputId="contribution" mode="decimal" formControlName="contribution" />
         </div>
     </div>
 
     <p-divider />
     <div class="w-full flex justify-end">
-        <p-button [disabled]="_formGroup.invalid" (onClick)="close()" icon="pi pi-plus"
+        <p-button type="submit" [disabled]="_formGroup.invalid" (onClick)="close()" icon="pi pi-plus"
             [label]="'Speichern'|translate" />
     </div>
 </form>

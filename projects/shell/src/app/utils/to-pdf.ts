@@ -12,10 +12,15 @@ type TableRow = {
     fromTo: string;
 }
 
+type Group = {
+    items: TableRow[];
+    name: string;
+}
+
 export type Content = {
     firstname: string;
     lastname: string;
-    items: TableRow[],
+    groups: Group[],
     street: string;
     city: string;
     streetNo: string;
@@ -47,6 +52,12 @@ export function toPdf(content: Content) {
         background-color: transparent;
         }
 
+        tr th {
+            padding: 6px;
+            text-align: left;
+            background-color:rgb(127, 187, 255)
+        }
+
         tr td {
         padding: 6px;
         vertical-align: top;
@@ -61,86 +72,100 @@ export function toPdf(content: Content) {
             padding-bottom: 4px;
         }
 
+        .signature {
+        margin-top: 80px;
+        }
+
+        .signature-field {
+        margin-top: 40px;
+        }
 
 `
 
     let html = `<style>${styles}</style>`;
-    let rows = ``;
-    let totalOnce = 0;
-    let totalContrib = 0;
-    let _switch = 1;
+    let tables = ``;
 
+    content.groups.forEach((group) => {
+        let rows = ``;
+        let _switch = 1;
+        let totalOnce = 0;
+        let totalContrib = 0;
+        group.items.forEach((row) => {
+            let cells = ``;
 
-    content.items.forEach((row) => {
-        let cells = ``;
-
-        cells += `<td>
-        <span class="cell-header">Produkt</span>
+            cells += `<td>
         <div>${row['type'] ?? '-'}</div></td>`;
-        cells += `<td>
-             <span class="cell-header">Ves.Nr.</span>
+            cells += `<td>
              <div>${row['nr'] ?? '-'}</div></td>`;
-        cells += `<td>
-             <span class="cell-header">Versicherer</span>
+            cells += `<td>
              <div>${row['insurer'] ?? '-'}</div></td>`;
-        cells += `<td>
-             <span class="cell-header">VN</span>
+            cells += `<td>
              <div>${row['party'] ?? '-'}</div></td>`;
-        cells += `<td>
+            cells += `<td>
                   <span class="cell-header">Vorschlag</span>
                   <div>${row['suggestion'] ?? '-'}</div></td>`;
-        rows += `<tr class="${_switch === 1 ? 'odd' : 'even'}">${cells}</tr>`
 
-        let lowerCells = ``;
-        lowerCells += `<td colspan="2">
-                  <span class="cell-header">Leistung</span>
+
+            cells += `<td>
                   <div>${row['scope'] ?? '-'}</div></td>`;
-        lowerCells += `<td>
+            cells += `<td>
         <div class="cell">
-             <span class="cell-header">Laufzeit</span>
              <div>${row['fromTo'] ?? '-'}</div></div></td>`;
-        lowerCells += `<td>
-             <span class="cell-header">Einmalig</span>
+            cells += `<td>
              <div>${row['oneTimePayment'] ?? '-'}€</div></td>`;
-        lowerCells += `<td>
-             <span class="cell-header">Beitrag</span>
+            cells += `<td>
              <div>${row['contribution'] ?? '-'}€</div></td>`;
-        rows += `<tr class="${_switch === 1 ? 'odd' : 'even'} border-row">${lowerCells}</tr>`
+            // rows += `<tr class="${_switch === 1 ? 'odd' : 'even'} border-row">${lowerCells}</tr>`
+            rows += `<tr class="${_switch === 1 ? 'odd' : 'even'}">${cells}</tr>`
+            totalOnce += Number.parseFloat(`${row['oneTimePayment']}`);
 
-        totalOnce += Number.parseFloat(`${row['oneTimePayment']}`);
+            totalContrib += Number.parseFloat(`${row['contribution']}`);
+            _switch *= -1;
+        });
 
-        totalContrib += Number.parseFloat(`${row['contribution']}`);
-        _switch *= -1;
-    });
+        const table = `
+        <h2>${group.name}</h2>
+        <table cellspacing="0" cellpadding="0">
+        <thead>
+            <tr>
+                <th>Produkt</th>
+                <th>Vers.Nr.</th>
+                <th>Versicherer</th>
+                <th>VN</th>
+                <th>Vorschlag</th>
+                <th>Leistung</th>
+                <th>Laufzeit</th>
+                <th>Einmalig</th>
+                <th>Beitrag</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${rows}
+        <tbody>
+        <tfoot>
+        <tr>
+            <td colspan="7"></td>
+            <td><b>${totalOnce} €</b></td>  
+            <td><b>${totalContrib} €</b></td>
+        </tr>
+        </tfoot>
+        </table>
+        </div>`;
 
+        tables += table
+    })
 
     html += `
 <div style="padding: 4px">${content.firstname} ${content.lastname}</div>
-<div style="padding: 4px">${content.street ?? ''} ${content.streetNo?? ''}</div>
-<div style="padding: 4px">${content.zipCode?? ''}</div>
-<div style="padding: 4px">${content.city?? ''}</div>
+<div style="padding: 4px">${content.street ?? ''} ${content.streetNo ?? ''}</div>
+<div style="padding: 4px">${content.zipCode ?? ''}</div>
+<div style="padding: 4px">${content.city ?? ''}</div>
 <div class="wrapper">
-<table cellspacing="0" cellpadding="0">
-<thead>
-    <tr>
-        <th></th>
-        <th></th>
-        <th></th>
-        <th></th>
-        <th></th>
-    </tr>
-</thead>
-<tbody>
-    ${rows}
-<tbody>
-<tfoot>
-<tr>
-    <td colspan="3"></td>
-    <td><b>${totalOnce} €</b></td>  
-    <td><b>${totalContrib} €</b></td>
-</tr>
-</tfoot>
-</table>
+${tables}
+<div class="signature">
+<div><b>Unterschift</b></div>
+<div class="signature-field">_______________________________</div>
+<div>${content.firstname} ${content.lastname}</div>
 </div>
 `;
 

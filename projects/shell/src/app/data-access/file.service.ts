@@ -50,7 +50,6 @@ export class FileService {
                 finalize(() => this._isLoading.set(false)),
                 tap((d) => {
                     if (d.ok) {
-                        console.log(d)
                         this._files.set(d.data);
                     } else {
                         this.clear();
@@ -97,7 +96,6 @@ export class FileService {
     authentication() {
         return lastValueFrom(this.electronService.handle<AccessResponse>('api/dropbox/auth').pipe(
             tap(t => {
-                console.log(t)
                 this._token.set(t.access_token);
                 localStorage.setItem(DROPBOX_STORAGE_KEY, t.access_token);
                 this.listFiles();

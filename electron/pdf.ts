@@ -48,7 +48,7 @@ export function registerPdfHandler() {
         const pdfBuffer = await window.webContents.printToPDF({
             pageSize: 'A4',
             printBackground: true,
-
+            landscape: true, 
             displayHeaderFooter: true,  // Enable header and footer
             headerTemplate: `
             <div class="pdf-header">

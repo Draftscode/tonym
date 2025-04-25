@@ -38,74 +38,91 @@
             </div>
         </div>
         <p-divider />
-        <div class="w-full flex flex-col space-y-2" formArrayName="items">
-            <p-table [value]="_formGroup.controls.items.controls" [tableStyle]="{ 'min-width': '50rem', width:'100%' }">
-                <ng-template #header>
-                    <tr>
-                        <th [id]="'table-header-type'">{{'label.type'|translate}}
-                        </th>
-                        <th [id]="'table-header-nr'">{{'label.nr'|translate}}
-                        </th>
-                        <th [id]="'table-header-insurer'">{{'label.insurer'|translate}}
-                        </th>
-                        <th [id]="'table-header-party'">{{'label.party'|translate}}
-                        </th>
-                        <th [id]="'table-header-scope'">{{'label.scope'|translate}}
-                        </th>
-                        <th [id]="'table-header-suggestion'">{{'label.suggestion'|translate}}
-                        </th>
-                        <th [id]="'table-header-fromTo'">{{'label.fromTo'|translate}}
-                        </th>
-                        <th [id]="'table-header-oneTimePayment'">{{'label.oneTimePayment'|translate}}
-                        </th>
-                        <th [style.width.px]="100" [id]="'table-header-contribution'">{{'label.contribution'|translate}}
-                        </th>
-                        <th></th>
-                    </tr>
-                </ng-template>
-                <ng-template #body let-item let-rowIndex="rowIndex">
-                    <tr [formGroup]="item">
-                        @for(header of _headers(); track header) {
-                        <td>
-                            @if(header.editor === 'range') {
-                            {{ item.controls[header.label].value |cDate:'dd.MM.YYYY'}}
-                            }@else {
-                            {{ item.controls[header.label].value }}
-                            }
-                            @if(header.prefix) {
-                            {{header.prefix}}
-                            }
-                        </td>
+        <div formArrayName="groups">
+            @for(group of _formGroup.controls.groups.controls; track group; let groupIndex = $index) {
+            <div class="w-full flex flex-col space-y-2" [formArrayName]="groupIndex">
+                @let showDialog = false;
+                <h2>
+                    {{group.controls.name.value}}
+                    <p-button icon="pi pi-pencil" size="small" [text]="true" (onClick)="onEditGroup(groupIndex)" />
+                    <p-button icon="pi pi-trash" size="small" [text]="true" (onClick)="onRemoveGroup(groupIndex)" />
+                </h2>
+                <p-table [value]="_formGroup.controls.groups.at(groupIndex).controls.items.controls"
+                    [tableStyle]="{ 'min-width': '50rem', width:'100%' }">
+                    <ng-template #header>
+                        <tr>
+                            <th [id]="'table-header-type'">{{'label.type'|translate}}
+                            </th>
+                            <th [id]="'table-header-nr'">{{'label.nr'|translate}}
+                            </th>
+                            <th [id]="'table-header-insurer'">{{'label.insurer'|translate}}
+                            </th>
+                            <th [id]="'table-header-party'">{{'label.party'|translate}}
+                            </th>
+                            <th [id]="'table-header-scope'">{{'label.scope'|translate}}
+                            </th>
+                            <th [id]="'table-header-suggestion'">{{'label.suggestion'|translate}}
+                            </th>
+                            <th [id]="'table-header-fromTo'">{{'label.fromTo'|translate}}
+                            </th>
+                            <th [id]="'table-header-oneTimePayment'">{{'label.oneTimePayment'|translate}}
+                            </th>
+                            <th [style.width.px]="100" [id]="'table-header-contribution'">
+                                {{'label.contribution'|translate}}
+                            </th>
+                            <th></th>
+                        </tr>
+                    </ng-template>
+                    <ng-template #body let-item let-rowIndex="rowIndex">
+                        <tr [formGroup]="item">
+                            @for(header of _headers(); track header) {
+                            <td>
+                                @if(header.editor === 'range') {
+                                {{ item.controls[header.label].value |cDate:'dd.MM.YYYY'}}
+                                }@else {
+                                {{ item.controls[header.label].value }}
+                                }
+                                @if(header.prefix) {
+                                {{header.prefix}}
+                                }
+                            </td>
 
-                        }
-                        <td>
-                            <div class="inline-flex gap-1">
+                            }
+                            <td>
+                                <div class="inline-flex gap-1">
 
-                                <p-button [disabled]="_pdfService.isLoading()" icon="pi pi-pencil" severity="secondary"
-                                    (onClick)="onEditRow(rowIndex)" />
-                                <p-button [disabled]="_pdfService.isLoading()" icon="pi pi-trash" severity="danger"
-                                    (onClick)="_onRemoveRow(rowIndex)" />
-                            </div>
-                        </td>
-                    </tr>
-                </ng-template>
-                <ng-template #footer>
-                    <tr>
-                        <td colspan="7" class="font-semibold">Total</td>
-                        <td class="font-semibold">{{_totalOnce()}} €</td>
-                        <td class="font-semibold">{{_totalContrib()}} €</td>
-                        <td></td>
-                    </tr>
-                </ng-template>
-            </p-table>
-            <div class="w-full flex justify-end">
-                <p-button [disabled]="_pdfService.isLoading()" icon="pi pi-plus" severity="secondary"
-                    (onClick)="_onAddRow()" label="add row" />
+                                    <p-button [disabled]="_pdfService.isLoading()" icon="pi pi-pencil"
+                                        severity="secondary" (onClick)="onEditRow(groupIndex,rowIndex)" />
+                                    <p-button [disabled]="_pdfService.isLoading()" icon="pi pi-trash" severity="danger"
+                                        (onClick)="_onRemoveRow(groupIndex,rowIndex)" />
+                                </div>
+                            </td>
+                        </tr>
+                    </ng-template>
+                    <ng-template #footer>
+                        <tr>
+                            <td colspan="7" class="font-semibold">Total</td>
+                            <td class="font-semibold">
+                                {{_formGroup.controls.groups.at(groupIndex).controls.items.controls |
+                                totalOnce:'oneTimePayment'}} €</td>
+                            <td class="font-semibold">
+                                {{_formGroup.controls.groups.at(groupIndex).controls.items.controls |
+                                totalOnce:'contribution'}} €</td>
+                            <td></td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+                <div class="w-full flex justify-end">
+                    <p-button [disabled]="_pdfService.isLoading()" icon="pi pi-plus" severity="secondary"
+                        (onClick)="_onAddRow(groupIndex)" label="add row" />
+                </div>
+
             </div>
-
+            <p-divider />
+            }
         </div>
+        <p-button icon="pi pi-plus" (onClick)="onAddGroup()" severity="secondary" label="Neue Gruppe" />
 
-        <p-divider />
         <div class="w-full flex justify-end">
             <p-button [disabled]="_pdfService.isLoading() || _formGroup.invalid" (onClick)="_onCreatePdf()"
                 icon="pi pi-plus" [label]="'label.create_pdf'|translate" />
