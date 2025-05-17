@@ -14,7 +14,15 @@
     </div>
     <div class="inline-flex flex-col">
         <label for="insurer">Versicherer</label>
-        <input id="insurer" pInputText formControlName="insurer" />
+        <p-auto-complete formControlName="insurer" [dropdown]="true" appendTo="body"
+            optionLabel="name" [suggestions]="insurers()" (completeMethod)="searchInsurers($event.query)">
+            <ng-template #item let-item>
+                <div class="flex gap-2 items-center overflow-hidden text-ellipsis whitespace-nowrap" style="max-width: 300px">
+                    <img style="height: 32px; width: auto" [src]="item.image" />
+                    <span [pTooltip]="item.name" class="overflow-hidden text-ellipsis whitespace-nowrap">{{item.name}}</span>
+                </div>
+            </ng-template>
+        </p-auto-complete>
     </div>
     <div class="inline-flex flex-col">
         <label for="scope">Leistung</label>
@@ -34,11 +42,13 @@
     <div class="flex gap-2">
         <div class="inline-flex flex-col">
             <label for="oneTimePayment">Einmalig</label>
-            <p-inputnumber [minFractionDigits]="2" [maxFractionDigits]="2" inputId="oneTimePayment" mode="decimal" formControlName="oneTimePayment" />
+            <p-inputnumber [minFractionDigits]="2" [maxFractionDigits]="2" inputId="oneTimePayment" mode="decimal"
+                formControlName="oneTimePayment" />
         </div>
         <div class="inline-flex flex-col">
             <label for="contribution">Beitrag</label>
-            <p-inputnumber [minFractionDigits]="2" [maxFractionDigits]="2" inputId="contribution" mode="decimal" formControlName="contribution" />
+            <p-inputnumber [minFractionDigits]="2" [maxFractionDigits]="2" inputId="contribution" mode="decimal"
+                formControlName="contribution" />
         </div>
     </div>
 

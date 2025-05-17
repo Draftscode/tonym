@@ -3,16 +3,16 @@ import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { registerDropboxHandler } from './dropbox/dropbox.controller';
 import { registerFileHandler } from './file.handle';
+import { registerGdvHandler } from './gdv/gdv.controller';
 import { registerPdfHandler } from './pdf';
-import { registerDropboxHandler } from './dropbox';
 
 
 let mainWindow: BrowserWindow | null;
 const IS_DEV = !app.isPackaged;
 const ROOT_PATH = join(__dirname, '..');
 const LOG_DIR_PATH = join(app.getPath('userData'), 'logs', 'electron');
-const PORT = 3000;
 
 log.transports.file.level = 'info';
 autoUpdater.logger = log;
@@ -38,7 +38,6 @@ app.whenReady().then(() => {
         width: 1200,
         height: 800,
         titleBarStyle: 'default',
-        // titleBarStyle: 'hidden',
         webPreferences: {
             preload: join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -89,6 +88,7 @@ app.whenReady().then(() => {
     registerDropboxHandler();
     registerPdfHandler();
     registerFileHandler();
+    registerGdvHandler();
 });
 
 app.on('window-all-closed', () => {

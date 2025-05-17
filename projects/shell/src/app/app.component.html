@@ -18,29 +18,54 @@
                     <p-button (onClick)="_toggleSidebar()" [text]="false" [rounded]="true" [outlined]="true"
                         icon="pi pi-times" />
                 </div>
+                @if(_sidebarItems().length) {
                 <div class="w-full flex justify-end p-2">
-                    <p-button [disabled]="!fileService.isAuthenticated() || fileService.isLoading()" [outlined]="true"
-                        icon="pi pi-refresh" (onClick)="fileService.listFiles()" label="Aktualisieren" />
+                    <p-button [disabled]="!fileService.isAuthenticated() || fileService.isLoading()" [text]="true"
+                        icon="pi pi-refresh" (onClick)="fileService.listFiles()" label="Aktualisieren"
+                        severity="secondary" />
                 </div>
+                }
+                <p-divider />
+                @if(!_sidebarItems().length) {
+                <div class="flex justify-center text-gray-400"> Keine Dateien</div>
+                }
             </ng-template>
             <ng-template #submenuheader let-item>
                 <span class="text-primary font-bold">{{ item.label }}</span>
             </ng-template>
             <ng-template #item let-item>
-                <div class="flex items-center justify-between">
-                    <a pRipple class="flex items-center p-menu-item-link" [routerLink]="item.routerLink"
-                        [queryParams]="item.queryParams">
-                        <span [class]="item.icon"></span>
-                        <span class="ml-2">{{ item.label }}</span>
+                <div class="flex items-center justify-between" [routerLink]="item.routerLink" #rla="routerLinkActive"
+                    [queryParams]="item.queryParams" [routerLinkActive]="'bg-primary-100'">
+                    <a pRipple class="flex flex-col p-menu-item-link gap-0 w-full justify-start items-start">
+                        <div class="flex w-full items-center">
+                            <span [class]="item.icon"></span>
+                            <span class="ml-2">{{ item.label }}</span>
+                        </div>
+                        @if(item.details) {
+                        <div class="text-zinc-400 text-sm text-left">
+                            {{item.details | date:('date.datetime'|translate)}}
+                        </div>
+                        }
                     </a>
-                    <p-button (onClick)="op.toggle($event)" [text]="true" icon="pi pi-ellipsis-v" />
+                    <p-button (onClick)="$event.stopPropagation(); op.toggle($event)" [text]="true"
+                        icon="pi pi-ellipsis-v" />
                 </div>
                 <p-popover #op>
                     <div class="flex flex-col">
+                        <p-button label="Editieren" (onClick)="onEditFile(item)" icon="pi pi-pencil" [text]="true" />
                         <p-button label="Löschen" (onClick)="_onDeleteFile(item.label)" icon="pi pi-trash"
                             [text]="true" />
                     </div>
                 </p-popover>
+            </ng-template>
+            <ng-template #end>
+                @if(fileService.isAuthenticated()) {
+                <p-divider />
+                <div class="flex px-2 w-full">
+                    <p-button icon="pi pi-plus" class="w-full" styleClass="w-full" (onClick)="onCreateFile()"
+                        label="Erstellen" severity="secondary" [text]="true" />
+                </div>
+                }
             </ng-template>
         </p-menu>
     </div>
@@ -71,9 +96,13 @@
                 <ng-template #end>
                     <div class="flex items-center space-x-1">
 
-                        @if(!fileService.isAuthenticated()) {
-                        <p-button pTooltip="Dropbox Login" tooltipPosition="bottom" [rounded]="true" [text]="true"
-                            size="small" (onClick)="fileService.authentication()" [icon]="'pi pi-sign-in'" />
+                        @if( !fileService.isAuthenticated()) {
+                        <!-- <p-button pTooltip="Bei Dropbox Anmelden" tooltipPosition="bottom" [rounded]="true"
+                            [text]="true" size="small" (onClick)="fileService.authentication()"
+                            [icon]="'pi pi-sign-in'" /> -->
+                        } @else {
+                        <p-button pTooltip="Von Dropbox abmelden" tooltipPosition="bottom" [rounded]="true"
+                            [text]="true" size="small" (onClick)="fileService.logout()" [icon]="'pi pi-sign-out'" />
                         }
 
                         <p-button pTooltip="Nachtmodus umschalten" tooltipPosition="bottom" [rounded]="true"
@@ -89,6 +118,18 @@
             </p-menubar>
         </div>
         <div class="h-full w-full overflow-auto p-4 bg-zinc-100 dark:bg-zinc-900">
+            @if(!fileService.isAuthenticated()) {
+            <p-message
+                [text]="'Dropbox ist momentan nicht verbunden. Bitte melde dich an um deine Dateien zu synchronisieren!'"
+                severity="warn">
+                <ng-template #icon>
+                    <i class="pi pi-exclamation-triangle"></i>
+                </ng-template>
+                <p-button pTooltip="Bei Dropbox Anmelden" label="Anmelden" tooltipPosition="bottom" [rounded]="true"
+                    [text]="true" size="small" (onClick)="fileService.authentication()" [icon]="'pi pi-sign-in'" />
+
+            </p-message>
+            }
             <router-outlet />
         </div>
     </div>

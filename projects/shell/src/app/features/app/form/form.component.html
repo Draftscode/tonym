@@ -41,7 +41,6 @@
         <div formArrayName="groups">
             @for(group of _formGroup.controls.groups.controls; track group; let groupIndex = $index) {
             <div class="w-full flex flex-col space-y-2" [formArrayName]="groupIndex">
-                @let showDialog = false;
                 <h2>
                     {{group.controls.name.value}}
                     <p-button icon="pi pi-pencil" size="small" [text]="true" (onClick)="onEditGroup(groupIndex)" />
@@ -79,6 +78,12 @@
                             <td>
                                 @if(header.editor === 'range') {
                                 {{ item.controls[header.label].value |cDate:'dd.MM.YYYY'}}
+                                }@else if(header.label === 'insurer') {
+                                <div class="flex flex-row gap-2 items-center">
+                                    <img style="height: 32px; width: auto"
+                                        [src]="item.controls[header.label].value?.image" />
+                                    {{ item.controls[header.label].value?.name }}
+                                </div>
                                 }@else {
                                 {{ item.controls[header.label].value }}
                                 }
@@ -123,7 +128,9 @@
         </div>
         <p-button icon="pi pi-plus" (onClick)="onAddGroup()" severity="secondary" label="Neue Gruppe" />
 
-        <div class="w-full flex justify-end">
+        <div class="w-full flex justify-end space-x-2">
+            <p-button [disabled]="_pdfService.isLoading() || _formGroup.invalid || _formGroup.pristine"
+                (onClick)="onSave()" icon="pi pi-save" [label]="'Speichern'" />
             <p-button [disabled]="_pdfService.isLoading() || _formGroup.invalid" (onClick)="_onCreatePdf()"
                 icon="pi pi-plus" [label]="'label.create_pdf'|translate" />
         </div>

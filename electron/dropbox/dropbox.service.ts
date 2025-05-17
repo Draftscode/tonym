@@ -1,28 +1,15 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow } from "electron";
 
-export function registerDropboxHandler() {
-    const CLIENT_ID = 'brls8bkox6m412t';
-    const CLIENT_SECRET = 'bovs1s7mfl51thw';
+// Basti
+// const CLIENT_ID = '57ar8edt0ljrz6u';
+// const CLIENT_SECRET = '4j6otu8w8zl35iw';
 
-    ipcMain.handle('api/dropbox/auth', async (_event) => {
-        return await authentication();
-    });
+// Tony
+const CLIENT_ID = 'brls8bkox6m412t';
+const CLIENT_SECRET = 'bovs1s7mfl51thw';
 
-    ipcMain.handle('api/dropbox/files_create_or_update',
-        (_event, { token, filename, contents }) =>
-            uploadToDropbox(token, filename, contents));
-
-    ipcMain.handle('api/dropbox/files_read',
-        (_event, { token, filename }) =>
-            downloadFromDropbox(token, filename));
-
-    ipcMain.handle('api/dropbox/files_delete',
-        (_event, { token, filename }) =>
-            deleteFromDropbox(token, filename));
-
-    ipcMain.handle('api/dropbox/files', (_event, token) => listDropboxFiles(token));
-
-    async function listDropboxFiles(accessToken: string) {
+export class DropboxService {
+    static async listDropboxFiles(accessToken: string) {
         const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
             method: 'POST',
             headers: {
@@ -43,7 +30,7 @@ export function registerDropboxHandler() {
 
     }
 
-    async function deleteFromDropbox(accessToken: string, path: string) {
+    static async deleteFromDropbox(accessToken: string, path: string) {
 
         const response = await fetch('https://api.dropboxapi.com/2/files/delete_v2', {
             method: 'POST',
@@ -63,7 +50,33 @@ export function registerDropboxHandler() {
         return result;
     }
 
-    async function uploadToDropbox(accessToken: string, path: string, contents: string | Blob | ArrayBuffer) {
+    static async moveFile(accessToken: string, fromPath: string, toPath: string) {
+        const response = await fetch('https://api.dropboxapi.com/2/files/move_v2', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                from_path: `/${fromPath}`, // e.g., "/my-folder/file.txt"
+                to_path: `/${toPath}`,
+                autorename: false,
+                allow_ownership_transfer: false
+            })
+        });
+
+        if (!response.ok) {
+
+            const errorText = await response.text(); // 🔥 instead of response.json()
+            console.error('Dropbox moving file failed:', errorText);
+            throw new Error(`Upload error: ${errorText}`);
+        }
+
+        const data = await response.json();
+        return data;
+    }
+
+    static async uploadToDropbox(accessToken: string, path: string, contents: string | Blob | ArrayBuffer, renamed: string | null = null) {
         const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
             method: 'POST',
             headers: {
@@ -92,7 +105,7 @@ export function registerDropboxHandler() {
         return data;
     }
 
-    async function downloadFromDropbox(accessToken: string, path: string): Promise<Blob> {
+    static async downloadFromDropbox(accessToken: string, path: string): Promise<Blob> {
         const response = await fetch('https://content.dropboxapi.com/2/files/download', {
             method: 'POST',
             headers: {
@@ -111,16 +124,20 @@ export function registerDropboxHandler() {
         return JSON.parse(text);
     }
 
-    function authentication() {
+    static async authentication() {
         return new Promise((resolve, reject) => {
 
-            const AUTH_URL = `https://www.dropbox.com/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}`;
+            const AUTH_URL = `https://www.dropbox.com/oauth2/authorize?response_type=code&client_id=${CLIENT_ID}&token_access_type=offline`;
             const authWindow = new BrowserWindow({
                 width: 600,
                 height: 800,
                 show: true,
+                titleBarStyle: 'default',
                 webPreferences: { nodeIntegration: false }
             });
+
+
+            authWindow.removeMenu();
 
             authWindow.loadURL(AUTH_URL);
 
@@ -154,6 +171,7 @@ export function registerDropboxHandler() {
                 }
             });
 
+
             async function exchangeCodeForToken(authCode: string) {
                 const fetch = require('node-fetch');
 
@@ -178,5 +196,45 @@ export function registerDropboxHandler() {
             }
 
         })
+    }
+
+
+    static async refreshToken(refreshToken: string) {
+        const response = await fetch('https://api.dropboxapi.com/oauth2/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                grant_type: 'refresh_token',
+                refresh_token: refreshToken,
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET,
+            }),
+        });
+
+        if (!response.ok) {
+            return { ok: false, cause: { message: response.statusText, status: response.status } };
+        }
+
+        const data = await response.json();
+        return data; // Use this for further API calls
+    }
+
+
+    static async revokeDropboxToken(accessToken: string) {
+        const fetch = require('node-fetch');
+
+        const response = await fetch('https://api.dropboxapi.com/2/auth/token/revoke', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+            },
+        });
+
+        if (!response.ok) {
+            return { ok: false, cause: { message: response.statusText, status: response.status } };
+        }
+
     }
 }

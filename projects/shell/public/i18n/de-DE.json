@@ -10,5 +10,8 @@
         "party": "VN",
         "nr": "Vers.Nr.",
         "fromTo": "Laufzeit"
+    },
+    "date": {
+        "datetime": "dd.MM.YYYY HH:MM"
     }
 }

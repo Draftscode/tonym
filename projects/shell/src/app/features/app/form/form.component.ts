@@ -3,10 +3,12 @@ import { toSignal } from "@angular/core/rxjs-interop";
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
 import { TranslateModule } from "@ngx-translate/core";
+import { MessageService } from "primeng/api";
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from "primeng/button";
 import { CardModule } from 'primeng/card';
 import { DatePickerModule } from "primeng/datepicker";
+import { DialogModule } from "primeng/dialog";
 import { DividerModule } from 'primeng/divider';
 import { DialogService } from "primeng/dynamicdialog";
 import { InputTextModule } from 'primeng/inputtext';
@@ -15,13 +17,13 @@ import { TableModule } from 'primeng/table';
 import { TextareaModule } from 'primeng/textarea';
 import { distinctUntilChanged, filter, lastValueFrom, map, take } from "rxjs";
 import { FileService } from "../../../data-access/file.service";
+import { GdvMember } from "../../../data-access/gdv.service";
 import { PdfService } from "../../../data-access/pdf.service";
-import { Content } from "../../../utils/to-pdf";
+import { Content, TableRow } from "../../../utils/to-pdf";
 import { CDatePipe } from "./c-date.pipe";
 import { FormDialogComponent } from "./dialogs/form-dialog";
-import { TotalPipe } from "./total.pipe";
-import { DialogModule } from "primeng/dialog";
 import { GroupNameDialogComponent } from "./dialogs/group-name.dialog";
+import { TotalPipe } from "./total.pipe";
 
 type Header = {
     label: string;
@@ -34,7 +36,7 @@ export type FormArrayType = {
     nr: FormControl<string | null>;
     party: FormControl<string | null>;//VN
     fromTo: FormControl<string | null>;
-    insurer: FormControl<string | null>;
+    insurer: FormControl<GdvMember | null>;
     scope: FormControl<string | null>;
     suggestion: FormControl<string | null>;
     oneTimePayment: FormControl<number | null>;
@@ -73,10 +75,10 @@ export class FormComponent {
     private readonly ngCdr = inject(ChangeDetectorRef);
     protected readonly _suggestions = signal<string[]>([]);
     protected readonly _pdfService = inject(PdfService);
-    protected _suggs: string[] = ['Neu', 'Einstellung', 'Übernahme'];
+    protected _suggs: string[] = ['Neu', 'wird gekündigt', 'Übernahme'];
     private readonly _ngActiveRoute = inject(ActivatedRoute);
     private readonly _filename = toSignal(this._ngActiveRoute.queryParams.pipe(map(q => q['filename']), filter(f => !!f), distinctUntilChanged()));
-    // private readonly _electronService = inject(ElectronService);
+    private readonly pMessage = inject(MessageService)
     private readonly fileService = inject(FileService);
 
     protected readonly _formGroup = new FormGroup<FormType>({
@@ -86,32 +88,17 @@ export class FormComponent {
         zipCode: new FormControl<string | null>(null),
         city: new FormControl<string | null>(null),
         streetNo: new FormControl<string | null>(null),
-        groups: new FormArray([
-            new FormGroup({
-                name: new FormControl('Gruppe 1'),
-                items: new FormArray<FormGroup<FormArrayType>>([]),
-            }),
-        ]),
+        groups: new FormArray<FormGroup<FormList>>([]),
     });
 
-    protected readonly _headers = signal<Header[]>([
-        { label: 'type' },
-        { label: 'nr' },
-        { label: 'insurer' },
-        { label: 'party' },
-        { label: 'scope', width: 35 },
-        { label: 'suggestion', editor: 'dropdown' },
-        { label: 'fromTo', editor: 'range' },
-        { label: 'oneTimePayment', prefix: '€' },
-        { label: 'contribution', prefix: '€' },
-    ]);
 
     protected _search(query: string) {
-        this._suggs = ['Neu', 'Einstellung', 'Übernahme'];
+        this._suggs = ['Neu', 'wird gekündigt', 'Übernahme'];
     }
 
     protected onRemoveGroup(groupIndex: number) {
         this._formGroup.controls.groups.removeAt(groupIndex);
+        this._formGroup.markAsDirty();
     }
 
     protected async onEditGroup(groupIndex: number) {
@@ -129,15 +116,22 @@ export class FormComponent {
         if (result?.type === 'manually') {
             this._formGroup.controls.groups.at(groupIndex).patchValue({ name: result.data?.name ?? '' });
             this.ngCdr.markForCheck();
+            this._formGroup.markAsDirty();
         }
     }
 
-    protected onAddGroup() {
+    private addGroup(name: string): FormGroup<FormList> {
         const group = new FormGroup({
-            name: new FormControl<string | null>('Neue Gruppe'),
+            name: new FormControl<string | null>(name),
             items: new FormArray<FormGroup<FormArrayType>>([]),
         });
-        this._formGroup.controls.groups.insert(0, group);
+        this._formGroup.controls.groups.push(group);
+        this._formGroup.markAsDirty();
+        return group;
+    }
+
+    protected onAddGroup() {
+        this.addGroup('Neue Gruppe');
     }
 
     constructor() {
@@ -157,6 +151,13 @@ export class FormComponent {
             untracked(async () => {
                 const content = await this.fileService.readFile<Content>(filename);
                 this._formGroup.patchValue(content);
+                this._formGroup.controls.groups.clear();
+                content.groups.forEach(group => {
+                    const control = this.addGroup(group.name);
+                    group.items.forEach(row =>
+                        this.addRow(control.controls.items, row));
+                });
+                this.ngCdr.detectChanges();
             });
         })
 
@@ -171,6 +172,12 @@ export class FormComponent {
     protected async _onCreatePdf() {
         if (this._formGroup.invalid) { return; }
 
+        const form = this.getData();
+
+        lastValueFrom(this._pdfService.createPdf(form));
+    }
+
+    private getData() {
         const form = this._formGroup.getRawValue() as Content;
         form.groups.forEach(group => {
             group.items.forEach(item => {
@@ -180,11 +187,25 @@ export class FormComponent {
             });
         });
 
-        lastValueFrom(this._pdfService.createPdf(form));
+        return form;
+    }
+
+
+    protected async onSave() {
+        if (this._formGroup.invalid) { return; }
+
+        const data = this.getData();
+        const date = this.cDatePipe.transform([new Date()]);
+        const filename = this._filename() ?? `${data.firstname} ${data.lastname} - ${date}`;
+
+        await this.fileService.writeFile(filename, data);
+        this._formGroup.markAsPristine();
+        this.pMessage.add({ closable: true, severity: 'success', summary: 'Speichern erfolgreich', detail: 'Die Datei wurde erfolgreich gespeichert.', life: 5000 });
     }
 
     protected _onRemoveRow(groupIndex: number, index: number) {
         this._formGroup.controls.groups.at(groupIndex).controls.items.removeAt(index);
+        this._formGroup.markAsDirty();
     }
 
     protected async onEditRow(groupIndex: number, rowIndex: number) {
@@ -211,8 +232,40 @@ export class FormComponent {
                 oneTimePayment: result.data.oneTimePayment,
                 contribution: result.data.contribution,
             });
+            this._formGroup.markAsDirty();
             this.ngCdr.markForCheck();
         }
+    }
+
+    protected readonly _headers = signal<Header[]>([
+        { label: 'type' },
+        { label: 'nr' },
+        { label: 'insurer' },
+        { label: 'party' },
+        { label: 'scope', width: 35 },
+        { label: 'suggestion', editor: 'dropdown' },
+        { label: 'fromTo', editor: 'range' },
+        { label: 'oneTimePayment', prefix: '€' },
+        { label: 'contribution', prefix: '€' },
+    ]);
+
+    private addRow(control: FormArray<FormGroup<FormArrayType>>, data: TableRow) {
+        const row = new FormGroup<FormArrayType>({
+            nr: new FormControl<string | null>(data.nr),
+            fromTo: new FormControl<string | null>(data.fromTo),
+            party: new FormControl<string | null>(data.party),
+            type: new FormControl<string | null>(data.type),
+            insurer: new FormControl<GdvMember | null>(data.insurer),
+            scope: new FormControl<string | null>(data.scope),
+            suggestion: new FormControl<string | null>(data.suggestion),
+            oneTimePayment: new FormControl<number>(data.oneTimePayment),
+            contribution: new FormControl<number>(data.contribution),
+        })
+        control.push(row);
+
+        this._formGroup.markAsDirty();
+        this.ngCdr.markForCheck();
+        return row;
     }
 
     protected async _onAddRow(groupIndex: number) {
@@ -230,18 +283,7 @@ export class FormComponent {
 
                 const control = this._formGroup.controls.groups.at(groupIndex).controls.items;
 
-                control.push(new FormGroup<FormArrayType>({
-                    nr: new FormControl<string | null>(result.data.nr),
-                    fromTo: new FormControl<string | null>(result.data.fromTo),
-                    party: new FormControl<string | null>(result.data.party),
-                    type: new FormControl<string | null>(result.data.type),
-                    insurer: new FormControl<string | null>(result.data.insurer),
-                    scope: new FormControl<string | null>(result.data.scope),
-                    suggestion: new FormControl<string | null>(result.data.suggestion),
-                    oneTimePayment: new FormControl<number>(result.data.oneTimePayment),
-                    contribution: new FormControl<number>(result.data.contribution),
-                }))
-                this.ngCdr.markForCheck();
+                this.addRow(control, result.data);
             }
         });
 

@@ -1,26 +1,34 @@
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink, RouterOutlet } from '@angular/router';
-import { TranslateService } from '@ngx-translate/core';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { MenuItem } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { DividerModule } from 'primeng/divider';
+import { DialogService } from 'primeng/dynamicdialog';
 import { MenuModule } from 'primeng/menu';
 import { MenubarModule } from 'primeng/menubar';
+import { MessageModule } from 'primeng/message';
 import { PopoverModule } from 'primeng/popover';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { take } from 'rxjs';
 import * as packageJson from './../../../../package.json';
 import { AppService } from './app.service';
 import { ElectronService } from './data-access/electron.service';
-import { ThemeService } from './data-access/theme.service';
 import { FileService } from './data-access/file.service';
-
+import { ThemeService } from './data-access/theme.service';
+import { FileDialogComponent } from './dialogs/file.dialog';
 @Component({
   selector: 'app-root',
   styleUrl: 'app.component.scss',
-  imports: [RouterOutlet, PopoverModule, DialogModule, TooltipModule, RouterLink, ToastModule, MenubarModule, MenuModule, ButtonModule, ProgressSpinnerModule],
+  imports: [
+    RouterOutlet, PopoverModule, RouterLinkActive, MessageModule,
+    DividerModule, DialogModule, TooltipModule, DatePipe,
+    RouterLink, ToastModule, MenubarModule, TranslateModule,
+    MenuModule, ButtonModule, ProgressSpinnerModule],
   templateUrl: './app.component.html',
 })
 export class AppComponent {
@@ -32,6 +40,7 @@ export class AppComponent {
   protected readonly _menuItems = signal<MenuItem[]>([]);
   protected readonly _themeService = inject(ThemeService);
   protected readonly fileService = inject(FileService);
+  private readonly pDialog = inject(DialogService);
 
   protected readonly _isLogVisible = signal<boolean>(false);
   protected readonly _logs = signal<string | null>(null);
@@ -39,13 +48,13 @@ export class AppComponent {
   protected readonly _sidebarItems = computed(() => this.fileService.files().map(i => {
     return {
       label: i.name,
+      details: i.server_modified,
+      id: i.id,
       routerLink: ['app'],
-      icon: 'pi pi-fule',
+      icon: 'pi pi-file',
       queryParams: { filename: i.name }
     } as MenuItem;
   }))
-
-  protected readonly _ping = toSignal(this._appService.ping());
 
   constructor() {
     this._ngxTranslate.use('de-DE');
@@ -66,5 +75,36 @@ export class AppComponent {
 
   protected _onAppClose() {
     this._electronService.closeApp();
+  }
+
+  protected onCreateFile() {
+    const ref = this.pDialog.open(FileDialogComponent, {
+      data: null,
+      header: 'Datei erstellen'
+    });
+
+    ref.onClose.pipe(take(1)).subscribe(result => {
+      if (result?.type === 'manually') {
+        this.fileService.writeFile(result.data.name, {});
+      }
+    });
+  }
+
+  protected onEditFile(menuItem: MenuItem) {
+    const file = this.fileService.files().find(file => file.id === menuItem.id);
+    if (!file) { return; }
+
+    const ref = this.pDialog.open(FileDialogComponent, {
+      data: {
+        Headers: 'Detei bearbeiten',
+        name: file.name
+      }
+    });
+
+    ref.onClose.pipe(take(1)).subscribe(result => {
+      if (result?.type === 'manually') {
+        this.fileService.renameFile(file.id, result.data.name);
+      }
+    });
   }
 }

@@ -1,5 +1,8 @@
 {
     "label": {
         "create_pdf": "Create PDF"
+    },
+    "date": {
+        "datetime": "dd.MM.YYYY HH:MM"
     }
 }

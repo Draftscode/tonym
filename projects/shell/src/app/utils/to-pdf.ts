@@ -1,8 +1,10 @@
+import { GdvMember } from "../data-access/gdv.service";
+
 type SuggestionType = 'new' | 'discontinuation' | 'acquisition';
 
-type TableRow = {
+export type TableRow = {
     type: string;
-    insurer: string;
+    insurer: GdvMember;
     scope: string;
     suggestion: SuggestionType;
     oneTimePayment: number;
@@ -12,7 +14,7 @@ type TableRow = {
     fromTo: string;
 }
 
-type Group = {
+export type Group = {
     items: TableRow[];
     name: string;
 }
@@ -43,7 +45,21 @@ export function toPdf(content: Content) {
         border: 1px solid rgb(220,220,220);
         border-radius: 4px;
         overflow: hidden;
+    }
+
+//     thead {
+//       display: table-header-group;
+//       }
+
+//       @media print {
+//   thead {
+//     display: table-row-group !important; /* This disables repetition */
+//   }
 }
+        tr {
+            break-inside: avoid;
+            page-break-inside: avoid; /* fallback for older Chromium */
+        }
         tr.even {
         background-color: rgb(240,240,240);
         }
@@ -55,7 +71,8 @@ export function toPdf(content: Content) {
         tr th {
             padding: 6px;
             text-align: left;
-            background-color:rgb(127, 187, 255)
+            color: white;
+            background-color:rgb(25, 66, 109)
         }
 
         tr td {
@@ -90,31 +107,30 @@ export function toPdf(content: Content) {
         let _switch = 1;
         let totalOnce = 0;
         let totalContrib = 0;
+
         group.items.forEach((row) => {
             let cells = ``;
-
             cells += `<td>
-        <div>${row['type'] ?? '-'}</div></td>`;
+            <div>${row['type'] ?? '-'}</div></td>`;
             cells += `<td>
-             <div>${row['nr'] ?? '-'}</div></td>`;
+            <div>${row['nr'] ?? '-'}</div></td>`;
             cells += `<td>
-             <div>${row['insurer'] ?? '-'}</div></td>`;
+            <div style="display: flex; align-items: center; gap: .25rem">${row['insurer'] ? `<img style="height: 32px; width: auto" src="${row['insurer'].image}" /><span>${row['insurer'].name}</span>` : '-'}</div></td>`;
             cells += `<td>
-             <div>${row['party'] ?? '-'}</div></td>`;
+            <div>${row['party'] ?? '-'}</div></td>`;
             cells += `<td>
-                  <span class="cell-header">Vorschlag</span>
-                  <div>${row['suggestion'] ?? '-'}</div></td>`;
+            <div>${row['suggestion'] ?? '-'}</div></td>`;
 
 
             cells += `<td>
-                  <div>${row['scope'] ?? '-'}</div></td>`;
+            <div>${row['scope'] ?? '-'}</div></td>`;
             cells += `<td>
-        <div class="cell">
-             <div>${row['fromTo'] ?? '-'}</div></div></td>`;
+            <div class="cell">
+            <div>${row['fromTo'] ?? '-'}</div></div></td>`;
             cells += `<td>
-             <div>${row['oneTimePayment'] ?? '-'}€</div></td>`;
+            <div>${row['oneTimePayment'] ?? '-'}€</div></td>`;
             cells += `<td>
-             <div>${row['contribution'] ?? '-'}€</div></td>`;
+            <div>${row['contribution'] ?? '-'}€</div></td>`;
             // rows += `<tr class="${_switch === 1 ? 'odd' : 'even'} border-row">${lowerCells}</tr>`
             rows += `<tr class="${_switch === 1 ? 'odd' : 'even'}">${cells}</tr>`
             totalOnce += Number.parseFloat(`${row['oneTimePayment']}`);
@@ -128,27 +144,25 @@ export function toPdf(content: Content) {
         <table cellspacing="0" cellpadding="0">
         <thead>
             <tr>
-                <th>Produkt</th>
-                <th>Vers.Nr.</th>
-                <th>Versicherer</th>
-                <th>VN</th>
-                <th>Vorschlag</th>
-                <th>Leistung</th>
-                <th>Laufzeit</th>
-                <th>Einmalig</th>
-                <th>Beitrag</th>
+                <th style="width: 10%">Produkt</th>
+                <th style="width: 10%">Vers.Nr.</th>
+                <th style="width: 16%">Versicherer</th>
+                <th style="width: 10%">VN</th>
+                <th style="width: 10%">Vorschlag</th>
+                <th style="width: 20%">Leistung</th>
+                <th style="width: 10%">Laufzeit</th>
+                <th style="width: 7%">Einmalig</th>
+                <th style="width: 7%">Beitrag</th>
             </tr>
         </thead>
         <tbody>
             ${rows}
-        <tbody>
-        <tfoot>
-        <tr>
+                    <tr>
             <td colspan="7"></td>
-            <td><b>${totalOnce} €</b></td>  
-            <td><b>${totalContrib} €</b></td>
+            <td><b>${totalOnce.toFixed(2)} €</b></td>  
+            <td><b>${totalContrib.toFixed(2)} €</b></td>
         </tr>
-        </tfoot>
+        <tbody>
         </table>
         </div>`;
 

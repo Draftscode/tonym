@@ -1,0 +1,10 @@
+<form [formGroup]="formGroup" (ngSubmit)="onClose()">
+    <div class="inline-flex flex-col">
+        <label for="name">Dateiname</label>
+        <input id="name" formControlName="name" pInputText />
+    </div>
+    <p-divider />
+    <div class="flex justify-end">
+        <p-button (onClick)="onClose()" label="Bestätigen" />
+    </div>
+</form>

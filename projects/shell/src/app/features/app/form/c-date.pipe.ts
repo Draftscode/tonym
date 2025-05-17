@@ -11,10 +11,18 @@ export class CDatePipe extends DatePipe implements PipeTransform {
         // const formattedDate = super.transform(value, format, timezone, locale);
         // do other formatting and return the value
         if (!value) { return ''; }
-        const start = new Date(value[0]);
-        const end = new Date(value[1]);
+        
+        let result = '';
+        if (value.length >= 1) {
+            const start = new Date(value[0]);
+            result += `${super.transform(start, format ?? 'dd.MM.YYYY')}`;
+        }
+        
+        if (value.length === 2) {
+            const end = new Date(value[1]);
+            result += ` - ${super.transform(end, format ?? 'dd.MM.YYYY')}`
+        }
 
-        const r = `${super.transform(start, format ?? 'dd.MM.YYYY')} - ${super.transform(end, format ?? 'dd.MM.YYYY')}`;
-        return r;
+        return result;
     }
 }
