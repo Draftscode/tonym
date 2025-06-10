@@ -9,8 +9,7 @@ export function registerDropboxHandler() {
     ipcMain.handle('api/dropbox/refresh', async (_event, { refreshToken }) => await DropboxService.refreshToken(refreshToken));
 
     ipcMain.handle('api/dropbox/files_create_or_update',
-        (_event, { token, filename, contents }) =>
-            DropboxService.uploadToDropbox(token, filename, contents));
+        (_event, { token, filename, contents }) => DropboxService.uploadToDropbox(token, filename, contents));
 
 
     ipcMain.handle('api/dropbox/files_move',
@@ -25,5 +24,5 @@ export function registerDropboxHandler() {
         (_event, { token, filename }) =>
             DropboxService.deleteFromDropbox(token, filename));
 
-    ipcMain.handle('api/dropbox/files', (_event, token) => DropboxService.listDropboxFiles(token));
+    ipcMain.handle('api/dropbox/files', (_event, { token, query }) => DropboxService.listDropboxFiles(token, query));
 }

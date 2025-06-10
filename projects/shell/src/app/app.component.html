@@ -18,14 +18,23 @@
                     <p-button (onClick)="_toggleSidebar()" [text]="false" [rounded]="true" [outlined]="true"
                         icon="pi pi-times" />
                 </div>
-                @if(_sidebarItems().length) {
-                <div class="w-full flex justify-end p-2">
-                    <p-button [disabled]="!fileService.isAuthenticated() || fileService.isLoading()" [text]="true"
-                        icon="pi pi-refresh" (onClick)="fileService.listFiles()" label="Aktualisieren"
-                        severity="secondary" />
-                </div>
-                }
                 <p-divider />
+                <div class="flex justify-center w-full px-2 gap-1">
+                    <p-inputgroup>
+                        <p-inputgroup-addon>
+                            <i class="pi pi-search"></i>
+                        </p-inputgroup-addon>
+                        <input class="w-full" pSize="small" [value]="fileService.query()"
+                            (input)="onInput(search.value)" #search pInputText placeholder="Suche" />
+                        <p-inputgroup-addon>
+                            <p-button [disabled]="!fileService.query()" (onClick)="fileService.search('')"
+                                icon="pi pi-times" severity="secondary" />
+                        </p-inputgroup-addon>
+                    </p-inputgroup>
+                    <p-button pTooltip="Aktualisieren"
+                        [disabled]="!_sidebarItems().length || !fileService.isAuthenticated() || fileService.isLoading()"
+                        [text]="true" icon="pi pi-refresh" (onClick)="fileService.refresh()" severity="secondary" />
+                </div>
                 @if(!_sidebarItems().length) {
                 <div class="flex justify-center text-gray-400"> Keine Dateien</div>
                 }
@@ -35,7 +44,7 @@
             </ng-template>
             <ng-template #item let-item>
                 <div class="flex items-center justify-between" [routerLink]="item.routerLink" #rla="routerLinkActive"
-                    [queryParams]="item.queryParams" [routerLinkActive]="'bg-primary-100'">
+                    [queryParams]="item.queryParams" [routerLinkActive]="'bg-primary-100 dark:bg-primary-700'">
                     <a pRipple class="flex flex-col p-menu-item-link gap-0 w-full justify-start items-start">
                         <div class="flex w-full items-center">
                             <span [class]="item.icon"></span>

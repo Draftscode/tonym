@@ -14,12 +14,14 @@
     </div>
     <div class="inline-flex flex-col">
         <label for="insurer">Versicherer</label>
-        <p-auto-complete formControlName="insurer" [dropdown]="true" appendTo="body"
-            optionLabel="name" [suggestions]="insurers()" (completeMethod)="searchInsurers($event.query)">
+        <p-auto-complete formControlName="insurer" [dropdown]="true" appendTo="body" optionLabel="name"
+            [suggestions]="insurers()" (completeMethod)="searchInsurers($event.query)">
             <ng-template #item let-item>
-                <div class="flex gap-2 items-center overflow-hidden text-ellipsis whitespace-nowrap" style="max-width: 300px">
+                <div class="flex gap-2 items-center overflow-hidden text-ellipsis whitespace-nowrap"
+                    style="max-width: 300px">
                     <img style="height: 32px; width: auto" [src]="item.image" />
-                    <span [pTooltip]="item.name" class="overflow-hidden text-ellipsis whitespace-nowrap">{{item.name}}</span>
+                    <span [pTooltip]="item.name"
+                        class="overflow-hidden text-ellipsis whitespace-nowrap">{{item.name}}</span>
                 </div>
             </ng-template>
         </p-auto-complete>
@@ -30,8 +32,9 @@
     </div>
     <div class="inline-flex flex-col">
         <label for="suggestion">Vorschlag</label>
-        <p-autocomplete appendTo="body" (completeMethod)="onSearch($event.query)" [completeOnFocus]="true"
-            [dropdown]="true" [forceSelection]="true" formControlName="suggestion" [suggestions]="_suggs" />
+        <p-autocomplete [readonly]="true" appendTo="body" (completeMethod)="onSearch($event.query)"
+            [completeOnFocus]="true" [dropdown]="true" [forceSelection]="true" formControlName="suggestion"
+            [suggestions]="_suggs" optionLabel="label" optionValue="value" />
     </div>
     <div class="inline-flex flex-col">
         <label for="fromTo">Laufzeit</label>
@@ -49,6 +52,10 @@
             <label for="contribution">Beitrag</label>
             <p-inputnumber [minFractionDigits]="2" [maxFractionDigits]="2" inputId="contribution" mode="decimal"
                 formControlName="contribution" />
+        </div>
+        <div class="inline-flex flex-col">
+            <label for="monthly">Monatl.</label>
+            <p-checkbox [binary]="true" formControlName="monthly" inputId="monthly" />
         </div>
     </div>
 

@@ -7,6 +7,9 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { DividerModule } from 'primeng/divider';
 import { DialogService } from 'primeng/dynamicdialog';
+import { InputGroupModule } from 'primeng/inputgroup';
+import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
+import { InputTextModule } from 'primeng/inputtext';
 import { MenuModule } from 'primeng/menu';
 import { MenubarModule } from 'primeng/menubar';
 import { MessageModule } from 'primeng/message';
@@ -14,20 +17,21 @@ import { PopoverModule } from 'primeng/popover';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
-import { take } from 'rxjs';
+import { debounceTime, Subject, take } from 'rxjs';
 import * as packageJson from './../../../../package.json';
-import { AppService } from './app.service';
 import { ElectronService } from './data-access/electron.service';
 import { FileService } from './data-access/file.service';
 import { ThemeService } from './data-access/theme.service';
 import { FileDialogComponent } from './dialogs/file.dialog';
+
 @Component({
   selector: 'app-root',
   styleUrl: 'app.component.scss',
   imports: [
     RouterOutlet, PopoverModule, RouterLinkActive, MessageModule,
-    DividerModule, DialogModule, TooltipModule, DatePipe,
-    RouterLink, ToastModule, MenubarModule, TranslateModule,
+    DividerModule, DialogModule, TooltipModule, DatePipe, InputTextModule,
+    RouterLink, ToastModule, MenubarModule, TranslateModule, InputGroupModule,
+    InputGroupAddonModule,
     MenuModule, ButtonModule, ProgressSpinnerModule],
   templateUrl: './app.component.html',
 })
@@ -36,7 +40,6 @@ export class AppComponent {
   private readonly _ngxTranslate = inject(TranslateService);
   protected readonly _isSidebarOpen = signal<boolean>(false);
   protected readonly _electronService = inject(ElectronService);
-  private readonly _appService = inject(AppService);
   protected readonly _menuItems = signal<MenuItem[]>([]);
   protected readonly _themeService = inject(ThemeService);
   protected readonly fileService = inject(FileService);
@@ -54,14 +57,21 @@ export class AppComponent {
       icon: 'pi pi-file',
       queryParams: { filename: i.name }
     } as MenuItem;
-  }))
+  }));
+
+  private readonly query$ = new Subject<string>();
 
   constructor() {
     this._ngxTranslate.use('de-DE');
+    this.fileService.connectQuery(this.query$.pipe(debounceTime(500)));
   }
 
   protected _toggleSidebar() {
     this._isSidebarOpen.update(s => !s);
+  }
+
+  protected onInput(query: string) {
+    this.query$.next(query);
   }
 
   protected _onDeleteFile(filename: string) {

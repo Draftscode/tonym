@@ -1,5 +1,6 @@
-import { computed, inject, Injectable, signal } from "@angular/core";
-import { finalize, lastValueFrom, switchMap, tap } from "rxjs";
+import { computed, inject, Injectable, resource, signal } from "@angular/core";
+import { MessageService } from "primeng/api";
+import { finalize, lastValueFrom, map, Observable, of, switchMap, tap, throwError } from "rxjs";
 import { DropboxDataResponse, DropboxDataResponseError, ElectronService } from "./electron.service";
 
 const DROPBOX_STORAGE_KEY = 'dropbox_access_token';
@@ -32,8 +33,26 @@ type DropboxFile = {
 export class FileService {
     private readonly electronService = inject(ElectronService);
     private readonly _isLoading = signal<boolean>(false);
+    private readonly pMessage = inject(MessageService);
 
     private readonly _accessInfo = signal<AccessResponse | null>(null);
+    readonly query = signal<string>('');
+    private readonly timestamp = signal<string>(new Date().toISOString());
+
+    private readonly _files = resource({
+        request: () => {
+            return { query: this.query(), timestamp: this.timestamp() }
+        },
+        loader: ({ request }) => this.listFiles(request.query, request.timestamp),
+        defaultValue: [],
+
+    });
+
+    connectQuery(stream$: Observable<string>) {
+        stream$.subscribe(value => {
+            this.search(value);
+        });
+    }
 
     constructor() {
         try {
@@ -44,12 +63,16 @@ export class FileService {
                 this._accessInfo.set(accessInfo);
 
                 if (this._accessInfo()?.access_token) {
-                    this.listFiles();
+                    this.refresh();
                 }
             }
         } catch (e) {
-            console.warn('[auth] could not retreive access token information');
+            console.warn('[auth] could not retreive access token information', e);
         }
+    }
+
+    search(value: string) {
+        this.query.set(value);
     }
 
     async logout() {
@@ -64,18 +87,22 @@ export class FileService {
 
     }
 
-    private readonly _files = signal<DropboxFile[]>([]);
+    refresh() {
+        this.timestamp.set(new Date().toISOString())
+    }
 
-    async listFiles() {
+    private async listFiles(query: string = '', timestamp: string = '') {
         this._isLoading.set(true);
-        await lastValueFrom(
-            this.electronService.handle<DropboxDataResponse<DropboxFile[]>>('api/dropbox/files', this._accessInfo()?.access_token).pipe(
+        return lastValueFrom(
+            this.electronService.handle<DropboxDataResponse<DropboxFile[]>>('api/dropbox/files', { token: this._accessInfo()?.access_token, query }).pipe(
                 finalize(() => this._isLoading.set(false)),
-                tap((d) => {
+                map((d) => {
                     if (d.ok) {
-                        this._files.set(d.data);
+                        const items = d.data ?? [];
+                        return items;
                     } else {
                         this.handleErrors(d);
+                        return [];
                     }
                 })
             ));
@@ -85,7 +112,7 @@ export class FileService {
         if (e.cause.status === 401 && this._accessInfo()?.refresh_token) {
             try {
                 await this.refreshToken();
-                await this.listFiles();
+                this.refresh();
             } catch (e) {
                 this.clearAccessInfo();
                 console.error('[auth]', e);
@@ -122,10 +149,10 @@ export class FileService {
     async renameFile(fileId: string, toPath: string) {
         this._isLoading.set(true);
         try {
-            const original = this._files().find(file => file.id === fileId);
+            const original = this._files.value()?.find(file => file.id === fileId);
             if (original) {
                 await lastValueFrom(this.electronService.handle<void>('api/dropbox/files_move', { token: this._accessInfo()?.access_token, fromPath: original.name, toPath }).pipe(
-                    switchMap(() => this.listFiles())
+                    tap(() => this.refresh())
                 ));
             }
         } finally {
@@ -137,7 +164,7 @@ export class FileService {
         this._isLoading.set(true);
         try {
             await lastValueFrom(this.electronService.handle<void>('api/dropbox/files_delete', { token: this._accessInfo()?.access_token, filename }).pipe(
-                tap(() => this.listFiles()),
+                tap(() => this.refresh()),
             ));
         } finally {
             this._isLoading.set(false);
@@ -145,10 +172,17 @@ export class FileService {
     }
 
     async writeFile<T>(filename: string, contents: T) {
-        await lastValueFrom(this.electronService.handle('api/dropbox/files_create_or_update',
-            { token: this._accessInfo()?.access_token, filename, contents: JSON.stringify(contents) }).pipe(tap(() => {
-                this.listFiles();
-            })));
+        await lastValueFrom(this.electronService.handle<DropboxDataResponse<any>>('api/dropbox/files_create_or_update',
+            { token: this._accessInfo()?.access_token, filename, contents: JSON.stringify(contents) }).pipe(
+                switchMap((r) => {
+                    if (r.ok === false) {
+                        this.pMessage.add({ severity: 'error', life: 10_000, summary: 'Fehler', detail: r.cause.message })
+                        return throwError(() => r.cause);
+                    }
+
+                    return of(r);
+                }),
+                tap(() => this.refresh())));
     }
 
     async readFile<T>(filename: string) {
@@ -161,7 +195,7 @@ export class FileService {
     }
 
     get files() {
-        return this._files;
+        return this._files.value;
     }
 
 
@@ -178,7 +212,7 @@ export class FileService {
             tap(t => {
                 if (t.access_token) {
                     this.storeAccessInfo(t);
-                    this.listFiles();
+                    this.refresh();
                 }
             })
         ));

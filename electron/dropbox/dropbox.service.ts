@@ -9,25 +9,48 @@ const CLIENT_ID = 'brls8bkox6m412t';
 const CLIENT_SECRET = 'bovs1s7mfl51thw';
 
 export class DropboxService {
-    static async listDropboxFiles(accessToken: string) {
-        const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                path: '', // empty string means root folder
-                recursive: false
-            })
-        });
-        const data = await response.json();
-        if (!response.ok) {
-            return { ok: false, cause: { message: response.statusText, status: response.status } };
+    static async listDropboxFiles(accessToken: string, query: string | undefined = undefined) {
+        if (query) {
+            const response = await fetch('https://api.dropboxapi.com/2/files/search_v2', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    query,
+                    options: {
+                        filenameOnly: true,
+                        file_status: 'active', // only active files
+                        max_results: 100, // adjust as needed
+                    },
+                    path: '', // empty string means root folder
+                    recursive: false
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                return { ok: false, cause: { message: response.statusText, status: response.status } };
+            }
+            return { ok: true, data: data.matches?.map((d: any) => d.metadata.metadata) };
+        } else {
+            const response = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    path: '', // empty string means root folder
+                    recursive: false
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                return { ok: false, cause: { message: response.statusText, status: response.status } };
+            }
+            return { ok: true, data: data.entries };
         }
-
-        return { ok: true, data: data.entries };
-
     }
 
     static async deleteFromDropbox(accessToken: string, path: string) {
@@ -77,32 +100,45 @@ export class DropboxService {
     }
 
     static async uploadToDropbox(accessToken: string, path: string, contents: string | Blob | ArrayBuffer, renamed: string | null = null) {
-        const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/octet-stream',
-                'Dropbox-API-Arg': JSON.stringify({
-                    path: `/${path}`, // e.g., "/my-folder/file.txt"
-                    mode: 'overwrite', // overwrite if exists
-                    autorename: false,
-                    mute: false,
-                    strict_conflict: false
-                })
-            },
-            body: contents
-        });
+        try {
+            const response = await fetch('https://content.dropboxapi.com/2/files/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/octet-stream',
+                    'Dropbox-API-Arg': JSON.stringify({
+                        path: `/${path}`, // e.g., "/my-folder/file.txt"
+                        mode: 'overwrite', // overwrite if exists
+                        autorename: false,
+                        mute: false,
+                        strict_conflict: false
+                    })
+                },
+                body: contents
+            });
 
-        if (!response.ok) {
+            if (!response.ok) {
+                const errorText = await response.text(); // 🔥 instead of response.json()
+                console.error('Dropbox upload failed:', errorText);
 
+                return {
+                    ok: false,
+                    cause: { message: response.statusText, status: response.status }
 
-            const errorText = await response.text(); // 🔥 instead of response.json()
-            console.error('Dropbox upload failed:', errorText);
-            throw new Error(`Upload error: ${errorText}`);
+                }
+            }
+
+            const data = await response.json();
+            return {
+                ok: true,
+                data
+            };
+        } catch (e: any) {
+            return {
+                ok: false,
+                cause: e,
+            };
         }
-
-        const data = await response.json();
-        return data;
     }
 
     static async downloadFromDropbox(accessToken: string, path: string): Promise<Blob> {

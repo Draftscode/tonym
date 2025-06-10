@@ -1,17 +1,18 @@
 import { GdvMember } from "../data-access/gdv.service";
+import { Suggestion } from "../features/app/form/dialogs/form-dialog";
 
-type SuggestionType = 'new' | 'discontinuation' | 'acquisition';
 
 export type TableRow = {
     type: string;
     insurer: GdvMember;
     scope: string;
-    suggestion: SuggestionType;
+    suggestion: Suggestion;
     oneTimePayment: number;
     contribution: number;
     party: string;
     nr: string;
     fromTo: string;
+    monthly: boolean;
 }
 
 export type Group = {
@@ -19,14 +20,19 @@ export type Group = {
     name: string;
 }
 
-export type Content = {
+type Person = {
     firstname: string;
     lastname: string;
-    groups: Group[],
     street: string;
+    company: string;
     city: string;
     streetNo: string;
     zipCode: string;
+};
+
+export type Content = {
+    persons: Person[],
+    groups: Group[],
 }
 
 export function toPdf(content: Content) {
@@ -97,6 +103,10 @@ export function toPdf(content: Content) {
         margin-top: 40px;
         }
 
+        tr.border-top td {
+        border-top: 1px solid rgb(51, 51, 51);
+        }
+
 `
 
     let html = `<style>${styles}</style>`;
@@ -106,10 +116,19 @@ export function toPdf(content: Content) {
         let rows = ``;
         let _switch = 1;
         let totalOnce = 0;
-        let totalContrib = 0;
+        let existed = 0;
+        let savings = 0;
+        let current = 0;
+
 
         group.items.forEach((row) => {
             let cells = ``;
+            const suffix = row['suggestion']?.value === 'terminated' ? -1 : 1;
+            let contrib = Number.parseFloat(`${row['contribution']}`);
+            if (!row['monthly']) {
+                contrib = (contrib / 12);
+            }
+
             cells += `<td>
             <div>${row['type'] ?? '-'}</div></td>`;
             cells += `<td>
@@ -119,7 +138,7 @@ export function toPdf(content: Content) {
             cells += `<td>
             <div>${row['party'] ?? '-'}</div></td>`;
             cells += `<td>
-            <div>${row['suggestion'] ?? '-'}</div></td>`;
+            <div>${row['suggestion'].label ?? '-'}</div></td>`;
 
 
             cells += `<td>
@@ -130,12 +149,33 @@ export function toPdf(content: Content) {
             cells += `<td>
             <div>${row['oneTimePayment'] ?? '-'}€</div></td>`;
             cells += `<td>
-            <div>${row['contribution'] ?? '-'}€</div></td>`;
+            <div>${contrib.toFixed(2) ?? '-'}€</div></td>`;
             // rows += `<tr class="${_switch === 1 ? 'odd' : 'even'} border-row">${lowerCells}</tr>`
-            rows += `<tr class="${_switch === 1 ? 'odd' : 'even'}">${cells}</tr>`
-            totalOnce += Number.parseFloat(`${row['oneTimePayment']}`);
+            rows += `<tr class="${_switch === 1 ? 'odd' : 'even'}">${cells}</tr>`;
 
-            totalContrib += Number.parseFloat(`${row['contribution']}`);
+
+
+            if (row['suggestion']?.value === 'terminated') {
+                savings += contrib;
+                existed += contrib;
+            }
+
+            if (row['suggestion']?.value === 'inventory') {
+                existed += contrib;
+                current += contrib;
+            }
+
+            if (row['suggestion']?.value === 'new') {
+                totalOnce += suffix * Number.parseFloat(`${row['oneTimePayment']}`);
+                savings -= contrib;
+                current += contrib;
+            }
+
+            if (row['suggestion']?.value === 'acquisition') {
+                current += contrib;
+                 existed += contrib;
+            }
+
             _switch *= -1;
         });
 
@@ -157,11 +197,21 @@ export function toPdf(content: Content) {
         </thead>
         <tbody>
             ${rows}
-                    <tr>
-            <td colspan="7"></td>
-            <td><b>${totalOnce.toFixed(2)} €</b></td>  
-            <td><b>${totalContrib.toFixed(2)} €</b></td>
-        </tr>
+            <tr class="border-top">
+                <td colspan="7">Alt (monatl.)</td>
+                <td><b></b></td>  
+                <td><b>${existed.toFixed(2)} €</b></td>
+            </tr>
+            <tr>
+                <td colspan="7">Neu (monatl.)</td>
+                <td><b>${totalOnce.toFixed(2)} €</b></td>  
+                <td><b>${current.toFixed(2)} €</b></td>
+            </tr>
+            <tr>
+                <td colspan="7">Ersparnis (monatl.)</td>
+                <td><b></b></td>  
+                <td><b>${savings.toFixed(2)} €</b></td>
+            </tr>
         <tbody>
         </table>
         </div>`;
@@ -169,17 +219,31 @@ export function toPdf(content: Content) {
         tables += table
     })
 
+    let personHtml = ``;
+    let signature = ``;
+    content.persons.forEach(person => {
+        personHtml += `
+        <div class="p">
+        ${person.company ? `<div style="padding: 4px">${person.company}</div>` : ''}
+    <div style="padding: 4px">${person.firstname} ${person.lastname}</div>
+    <div style="padding: 4px">${person.street ?? ''} ${person.streetNo ?? ''}</div>
+    <div style="padding: 4px">${person.zipCode ?? ''}</div>
+    <div style="padding: 4px">${person.city ?? ''}</div>
+  </div>`;
+
+        signature += `<div class="p"><div><b>Unterschift</b></div>
+<div class="signature-field">_______________________________</div>
+<div>${person.firstname} ${person.lastname}</div></div>`;
+    })
+
     html += `
-<div style="padding: 4px">${content.firstname} ${content.lastname}</div>
-<div style="padding: 4px">${content.street ?? ''} ${content.streetNo ?? ''}</div>
-<div style="padding: 4px">${content.zipCode ?? ''}</div>
-<div style="padding: 4px">${content.city ?? ''}</div>
+    <div style="display: flex; gap: 12px;">
+${personHtml}
+</div>
 <div class="wrapper">
 ${tables}
-<div class="signature">
-<div><b>Unterschift</b></div>
-<div class="signature-field">_______________________________</div>
-<div>${content.firstname} ${content.lastname}</div>
+<div class="signature" style="display: flex; gap:4px; w-full; justify-content: space-between">
+${signature}
 </div>
 `;
 

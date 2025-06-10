@@ -34,6 +34,7 @@ export type DropboxDataResponseSuccess<T> = {
 
 export type DropboxDataResponse<T> = DropboxDataResponseError | DropboxDataResponseSuccess<T>;
 
+
 @Injectable({ providedIn: 'root' })
 export class ElectronService {
     isUpdateAvailable = signal<boolean>(false);

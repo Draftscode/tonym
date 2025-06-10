@@ -1,6 +1,10 @@
 {
     "label": {
-        "create_pdf": "Create PDF"
+        "create_pdf": "Create PDF",
+        "new": "New",
+        "acquisition": "Acquisition",
+        "inventory": "Inventory",
+        "terminated": "Terminated"
     },
     "date": {
         "datetime": "dd.MM.YYYY HH:MM"

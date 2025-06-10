@@ -9,7 +9,11 @@
         "contribution": "monatl. Beitrag",
         "party": "VN",
         "nr": "Vers.Nr.",
-        "fromTo": "Laufzeit"
+        "fromTo": "Laufzeit",
+        "new":"Neu",
+        "acquisition":"Übernahme",
+        "inventory":"Bestand",
+        "terminated":"wird gekündigt"
     },
     "date": {
         "datetime": "dd.MM.YYYY HH:MM"

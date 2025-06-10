@@ -1,5 +1,4 @@
-import { BrowserWindow } from 'electron';
-import { ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 
 export function registerPdfHandler() {
     ipcMain.handle('api/pdf', async (_event, contents) => {
@@ -10,6 +9,11 @@ export function registerPdfHandler() {
     ipcMain.handle('api/ping', async (_event, contents) => {
         return { ok: true };
     });
+
+    ipcMain.handle('api/read_pdf', async (_event, contents) => {
+        return { ok: true };
+    });
+
 
     async function renderPageWithPuppeteer(html: string): Promise<Uint8Array<ArrayBufferLike>> {
         const window = new BrowserWindow({
@@ -48,7 +52,7 @@ export function registerPdfHandler() {
         const pdfBuffer = await window.webContents.printToPDF({
             pageSize: 'A4',
             printBackground: true,
-            landscape: true, 
+            landscape: true,
             displayHeaderFooter: true,  // Enable header and footer
             headerTemplate: `
             <div class="pdf-header">

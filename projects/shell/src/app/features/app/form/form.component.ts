@@ -1,8 +1,8 @@
 import { ChangeDetectorRef, Component, effect, inject, signal, untracked } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { ActivatedRoute } from "@angular/router";
-import { TranslateModule } from "@ngx-translate/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { TranslateModule, TranslateService } from "@ngx-translate/core";
 import { MessageService } from "primeng/api";
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from "primeng/button";
@@ -19,10 +19,16 @@ import { distinctUntilChanged, filter, lastValueFrom, map, take } from "rxjs";
 import { FileService } from "../../../data-access/file.service";
 import { GdvMember } from "../../../data-access/gdv.service";
 import { PdfService } from "../../../data-access/pdf.service";
+import { FileDialogComponent } from "../../../dialogs/file.dialog";
+import { normalizeSuggestion } from "../../../utils/normalize-suggestion";
 import { Content, TableRow } from "../../../utils/to-pdf";
 import { CDatePipe } from "./c-date.pipe";
-import { FormDialogComponent } from "./dialogs/form-dialog";
+import { FormDialogComponent, Suggestion } from "./dialogs/form-dialog";
 import { GroupNameDialogComponent } from "./dialogs/group-name.dialog";
+import { ExistedPipe } from "./exited.pipe";
+import { MonthlyPipe } from "./monthly.pipe";
+import { NewPipe } from "./new.pipe";
+import { SavingsPipe } from "./savings.pipe";
 import { TotalPipe } from "./total.pipe";
 
 type Header = {
@@ -38,10 +44,11 @@ export type FormArrayType = {
     fromTo: FormControl<string | null>;
     insurer: FormControl<GdvMember | null>;
     scope: FormControl<string | null>;
-    suggestion: FormControl<string | null>;
+    suggestion: FormControl<Suggestion | null>;
     oneTimePayment: FormControl<number | null>;
     contribution: FormControl<number | null>;
     type: FormControl<string | null>;
+    monthly: FormControl<boolean | null>;
 }
 
 export type FormList = {
@@ -49,14 +56,29 @@ export type FormList = {
     name: FormControl<string | null>;
 }
 
-export type FormType = {
+type Person = {
+    zipCode: string;
+    streetNo: string;
+    street: string;
+    city: string;
+    firstname: string;
+    lastname: string;
+    company: string;
+}
+
+type PersonType = {
     zipCode: FormControl<string | null>;
     streetNo: FormControl<string | null>;
     street: FormControl<string | null>;
+    company: FormControl<string | null>;
     city: FormControl<string | null>;
     firstname: FormControl<string | null>;
     lastname: FormControl<string | null>;
+}
+
+export type FormType = {
     groups: FormArray<FormGroup<FormList>>;
+    persons: FormArray<FormGroup<PersonType>>,
 }
 
 @Component({
@@ -65,7 +87,8 @@ export type FormType = {
     imports: [AutoCompleteModule, TranslateModule, DatePickerModule,
         InputTextModule, TableModule, ProgressBarModule, DialogModule,
         TextareaModule, ReactiveFormsModule, CardModule, TotalPipe,
-        AutoCompleteModule, ButtonModule, DividerModule, CDatePipe
+        AutoCompleteModule, ButtonModule, DividerModule, CDatePipe,
+        SavingsPipe, ExistedPipe, NewPipe, MonthlyPipe
     ],
     providers: [CDatePipe],
     templateUrl: 'form.component.html'
@@ -75,25 +98,32 @@ export class FormComponent {
     private readonly ngCdr = inject(ChangeDetectorRef);
     protected readonly _suggestions = signal<string[]>([]);
     protected readonly _pdfService = inject(PdfService);
-    protected _suggs: string[] = ['Neu', 'wird gekündigt', 'Übernahme'];
     private readonly _ngActiveRoute = inject(ActivatedRoute);
     private readonly _filename = toSignal(this._ngActiveRoute.queryParams.pipe(map(q => q['filename']), filter(f => !!f), distinctUntilChanged()));
     private readonly pMessage = inject(MessageService)
     private readonly fileService = inject(FileService);
+    protected isNew = signal<boolean>(false);
+    private readonly router = inject(Router);
+    private readonly ngxTranslate = inject(TranslateService);
 
     protected readonly _formGroup = new FormGroup<FormType>({
-        firstname: new FormControl<string | null>(null, [Validators.required]),
-        lastname: new FormControl<string | null>(null, [Validators.required]),
-        street: new FormControl<string | null>(null),
-        zipCode: new FormControl<string | null>(null),
-        city: new FormControl<string | null>(null),
-        streetNo: new FormControl<string | null>(null),
+        persons: new FormArray<FormGroup<PersonType>>([]),
         groups: new FormArray<FormGroup<FormList>>([]),
     });
 
 
-    protected _search(query: string) {
-        this._suggs = ['Neu', 'wird gekündigt', 'Übernahme'];
+    protected onCreateFile() {
+        const ref = this.pDialog.open(FileDialogComponent, {
+            data: null,
+            header: 'Datei erstellen'
+        });
+
+        ref.onClose.pipe(take(1)).subscribe(async result => {
+            if (result?.type === 'manually') {
+                await this.fileService.writeFile(result.data.name, {});
+                this.router.navigate([], { relativeTo: this._ngActiveRoute, queryParams: { filename: result.data.name } });
+            }
+        });
     }
 
     protected onRemoveGroup(groupIndex: number) {
@@ -147,47 +177,78 @@ export class FormComponent {
         effect(() => {
             const filename = this._filename();
 
+            this.isNew.set(!filename);
+
             if (!filename) { return; }
             untracked(async () => {
                 const content = await this.fileService.readFile<Content>(filename);
                 this._formGroup.patchValue(content);
                 this._formGroup.controls.groups.clear();
-                content.groups.forEach(group => {
+                this._formGroup.controls.persons.clear();
+
+
+                content.groups?.forEach(group => {
                     const control = this.addGroup(group.name);
                     group.items.forEach(row =>
                         this.addRow(control.controls.items, row));
                 });
+
+                content.persons?.forEach(person => {
+                    const control = this.addPerson(person);
+                })
+
+                this._formGroup.markAsPristine();
                 this.ngCdr.detectChanges();
             });
         })
 
     }
 
-    protected _onComplete(query: string) {
-        this._suggestions.set(['Hallo', 'Ballo'])
-    }
-
-
     private readonly cDatePipe = inject(CDatePipe);
     protected async _onCreatePdf() {
         if (this._formGroup.invalid) { return; }
 
-        const form = this.getData();
+        const form = this.getData(true);
 
         lastValueFrom(this._pdfService.createPdf(form));
     }
 
-    private getData() {
+    private getData(transformDate: boolean = false) {
         const form = this._formGroup.getRawValue() as Content;
         form.groups.forEach(group => {
             group.items.forEach(item => {
-                item.contribution = parseFloat(`${item.contribution}`),
-                    item.oneTimePayment = parseFloat(`${item.oneTimePayment}`),
+                item.contribution = parseFloat(`${item.contribution}`);
+                item.oneTimePayment = parseFloat(`${item.oneTimePayment}`);
+                if (transformDate) {
                     item.fromTo = this.cDatePipe.transform(item.fromTo, 'dd.MM.YYYY');
+                }
             });
         });
 
         return form;
+    }
+
+    protected removePerson(idx: number) {
+        this._formGroup.controls.persons.removeAt(idx);
+        this._formGroup.markAsDirty();
+    }
+
+    protected addPerson(p: Partial<Person> = {}) {
+        const person = new FormGroup<PersonType>({
+            firstname: new FormControl<string | null>(p.firstname ?? null, [Validators.required]),
+            lastname: new FormControl<string | null>(p.lastname ?? null, [Validators.required]),
+            street: new FormControl<string | null>(p.street ?? null),
+            zipCode: new FormControl<string | null>(p.zipCode ?? null),
+            company: new FormControl<string | null>(p.company ?? null),
+            city: new FormControl<string | null>(p.city ?? null),
+            streetNo: new FormControl<string | null>(p.streetNo ?? null),
+        });
+
+        this._formGroup.controls.persons.push(person);
+        this._formGroup.markAsDirty();
+        this.ngCdr.markForCheck();
+
+        return person;
     }
 
 
@@ -196,7 +257,7 @@ export class FormComponent {
 
         const data = this.getData();
         const date = this.cDatePipe.transform([new Date()]);
-        const filename = this._filename() ?? `${data.firstname} ${data.lastname} - ${date}`;
+        const filename = this._filename() ?? `${data.persons[0].firstname} ${data.persons[0].lastname} - ${date}`;
 
         await this.fileService.writeFile(filename, data);
         this._formGroup.markAsPristine();
@@ -221,6 +282,7 @@ export class FormComponent {
         const result = await lastValueFrom(ref.onClose.pipe(take(1)));
         if (result?.type === 'manually') {
             const control = this._formGroup.controls.groups.at(groupIndex).controls.items.at(rowIndex);
+
             control.patchValue({
                 nr: result.data.nr,
                 fromTo: result.data.fromTo,
@@ -228,9 +290,10 @@ export class FormComponent {
                 type: result.data.type,
                 insurer: result.data.insurer,
                 scope: result.data.scope,
-                suggestion: result.data.suggestion,
+                suggestion: normalizeSuggestion(result.data.suggestion, this.ngxTranslate),
                 oneTimePayment: result.data.oneTimePayment,
                 contribution: result.data.contribution,
+                monthly: result.data.monthly,
             });
             this._formGroup.markAsDirty();
             this.ngCdr.markForCheck();
@@ -249,6 +312,10 @@ export class FormComponent {
         { label: 'contribution', prefix: '€' },
     ]);
 
+    protected onRowReorder() {
+        this._formGroup.markAsDirty();
+    }
+
     private addRow(control: FormArray<FormGroup<FormArrayType>>, data: TableRow) {
         const row = new FormGroup<FormArrayType>({
             nr: new FormControl<string | null>(data.nr),
@@ -257,9 +324,10 @@ export class FormComponent {
             type: new FormControl<string | null>(data.type),
             insurer: new FormControl<GdvMember | null>(data.insurer),
             scope: new FormControl<string | null>(data.scope),
-            suggestion: new FormControl<string | null>(data.suggestion),
+            suggestion: new FormControl<Suggestion | null>(normalizeSuggestion(data.suggestion, this.ngxTranslate)),
             oneTimePayment: new FormControl<number>(data.oneTimePayment),
             contribution: new FormControl<number>(data.contribution),
+            monthly: new FormControl<boolean>(data.monthly),
         })
         control.push(row);
 

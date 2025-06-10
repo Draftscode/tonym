@@ -1,7 +1,7 @@
 <form [formGroup]="formGroup" (ngSubmit)="onClose()">
     <div class="inline-flex flex-col">
         <label for="name">Dateiname</label>
-        <input id="name" formControlName="name" pInputText />
+        <input id="name" formControlName="name" pInputText [pKeyFilter]="blockChars" />
     </div>
     <p-divider />
     <div class="flex justify-end">
