@@ -23,6 +23,7 @@ import { ElectronService } from './data-access/electron.service';
 import { FileService } from './data-access/file.service';
 import { ThemeService } from './data-access/theme.service';
 import { FileDialogComponent } from './dialogs/file.dialog';
+import { ScrollerModule } from 'primeng/scroller';
 
 @Component({
   selector: 'app-root',
@@ -31,7 +32,7 @@ import { FileDialogComponent } from './dialogs/file.dialog';
     RouterOutlet, PopoverModule, RouterLinkActive, MessageModule,
     DividerModule, DialogModule, TooltipModule, DatePipe, InputTextModule,
     RouterLink, ToastModule, MenubarModule, TranslateModule, InputGroupModule,
-    InputGroupAddonModule,
+    InputGroupAddonModule, ScrollerModule,
     MenuModule, ButtonModule, ProgressSpinnerModule],
   templateUrl: './app.component.html',
 })

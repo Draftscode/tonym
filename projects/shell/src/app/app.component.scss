@@ -27,3 +27,10 @@ $sidebarWidth: 260px;
     margin-left: $sidebarWidth;
     /* This shifts the main content to the right */
 }
+
+:host ::ng-deep {
+    .p-menu-list {
+        height: 100%;
+        overflow: auto;
+    }
+}

@@ -2,7 +2,7 @@
     <div class="flex-none flex h-full sidebar shadow-sm z-1 border-r-1 border-zinc-50 dark:border-zinc-600 bg-white flex-col"
         [class.open]="_isSidebarOpen()">
         <p-menu [model]="_sidebarItems()" class="flex justify-center w-full h-full"
-            styleClass="w-full h-full border-none rounded-none">
+            styleClass="w-full h-full border-none rounded-none flex flex-col">
             <ng-template #start>
                 <div class="flex w-full justify-between p-2 items-center">
                     <span class="inline-flex items-center gap-1 px-2 py-2">
@@ -35,6 +35,7 @@
                         [disabled]="!_sidebarItems().length || !fileService.isAuthenticated() || fileService.isLoading()"
                         [text]="true" icon="pi pi-refresh" (onClick)="fileService.refresh()" severity="secondary" />
                 </div>
+                <div class="w-full px-2 text-sm text-gray-400"><b>{{_sidebarItems().length || 0}}</b> Dateien</div>
                 @if(!_sidebarItems().length) {
                 <div class="flex justify-center text-gray-400"> Keine Dateien</div>
                 }
@@ -69,7 +70,7 @@
             </ng-template>
             <ng-template #end>
                 @if(fileService.isAuthenticated()) {
-                <p-divider />
+                <p-divider styleClass="mb-1"/>
                 <div class="flex px-2 w-full">
                     <p-button icon="pi pi-plus" class="w-full" styleClass="w-full" (onClick)="onCreateFile()"
                         label="Erstellen" severity="secondary" [text]="true" />
@@ -118,10 +119,10 @@
                             [text]="true" size="small" (onClick)="_themeService.toggleDarkMode()"
                             [icon]="'pi pi-'+ (_themeService.isDark() ? 'sun':'moon')" />
 
-                        <p-button pTooltip="Logs" tooltipPosition="bottom" size="small" [rounded]="true" [text]="true"
-                            (onClick)="_onLogs()" icon="pi pi-file" />
-                        <p-button pTooltip="Close App" tooltipPosition="bottom" [rounded]="true" [text]="true"
-                            size="small" (onClick)="_onAppClose()" icon="pi pi-times" />
+                        <!-- <p-button pTooltip="Logs" tooltipPosition="bottom" size="small" [rounded]="true" [text]="true"
+                            (onClick)="_onLogs()" icon="pi pi-file" /> -->
+                        <!-- <p-button pTooltip="Close App" tooltipPosition="bottom" [rounded]="true" [text]="true"
+                            size="small" (onClick)="_onAppClose()" icon="pi pi-times" /> -->
                     </div>
                 </ng-template>
             </p-menubar>

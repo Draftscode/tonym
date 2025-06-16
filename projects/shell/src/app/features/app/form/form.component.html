@@ -1,9 +1,14 @@
-<p-card class="flex w-full h-full" styleClass="m-auto dark:bg-zinc-800!" [style]="{'width':'100%'}">
+<p-card class="flex w-full h-full" styleClass="m-auto dark:bg-zinc-800!"
+    [style]="isNew() ? {'width':'auto'}:{'width':'100%'}">
     @if(isNew()) {
-    <div class="flex justify-center items-center flex-col">
-        <h1 class="text-xl font-semibold text-center" style="max-width: 320px;">Wähle eine vorhandene Datei aus dem
-            Seitenmenü aus, oder erstelle eine neue!</h1>
-        <p-button (onClick)="onCreateFile()" label="Datei erstellen" />
+    <div class="flex justify-center flex-col">
+        <span class="text-lg font-semibold">Keine Datei ausgewählt</span>
+        <span class="" style="max-width: 320px;">Wähle eine vorhandene Datei aus dem
+            Seitenmenü aus, oder erstelle eine neue!</span>
+        <p-divider />
+        <div class="flex justify-end">
+            <p-button icon="pi pi-plus" (onClick)="onCreateFile()" label="Datei erstellen" />
+        </div>
     </div>
     }
     @else {
@@ -196,7 +201,7 @@
                 </p-table>
                 <div class="w-full flex justify-end">
                     <p-button [disabled]="_pdfService.isLoading()" icon="pi pi-plus" severity="secondary"
-                        (onClick)="_onAddRow(groupIndex)" label="add row" />
+                        (onClick)="_onAddRow(groupIndex)" label="Neue Zeile" />
                 </div>
 
             </div>

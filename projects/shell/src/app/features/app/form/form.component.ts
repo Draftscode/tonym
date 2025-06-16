@@ -274,7 +274,7 @@ export class FormComponent {
             FormDialogComponent,
             {
                 header: 'Zeile bearbeiten',
-                data: this._formGroup.controls.groups.at(groupIndex).controls.items.value[rowIndex],
+                data: this._formGroup.controls.groups.at(groupIndex).controls.items.at(rowIndex).value,
                 closable: true,
             }
         );
