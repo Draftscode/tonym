@@ -1,7 +1,18 @@
 <form [formGroup]="formGroup" (ngSubmit)="onClose()">
+
+    <div class="flex w-full flex-col">
+
+        @for(customer of blaudirektService.customers.value(); track customer.Id) {
+        <div class="flex w-full flex-col">
+            <p-radiobutton [ngModel]="customer" [inputId]="customer.Id" name="category" [value]="customer" />
+            <label [for]="customer.Id" class="ml-2">{{ customer.Person.Vorname }} {{customer.Person.Nachname}}</label>
+        </div>
+        }
+    </div>
     <div class="inline-flex flex-col">
         <label for="name">Dateiname</label>
-        <input id="name" formControlName="name" pInputText [pKeyFilter]="blockChars" />
+        <input (change)="search(control.value)" #control id="name" formControlName="name" pInputText
+            [pKeyFilter]="blockChars" />
     </div>
     <p-divider />
     <div class="flex justify-end">

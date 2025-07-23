@@ -115,6 +115,7 @@ export class FormComponent {
     protected onCreateFile() {
         const ref = this.pDialog.open(FileDialogComponent, {
             data: null,
+            modal: true,
             header: 'Datei erstellen'
         });
 

@@ -7,5 +7,14 @@
             "^/api": ""
         },
         "loglevel": "debug"
+    },
+    "/blauirekt": {
+        "target": "https://auth.inte.dionera.dev/",
+        "secure": false,
+        "changeOrigin": true,
+        "pathRewrite": {
+            "^/blauirekt": ""
+        },
+        "loglevel": "debug"
     }
 }

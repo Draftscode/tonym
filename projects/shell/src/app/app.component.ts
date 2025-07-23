@@ -1,7 +1,9 @@
 import { DatePipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { OAuthService } from 'angular-oauth2-oidc';
 import { MenuItem } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -15,15 +17,16 @@ import { MenubarModule } from 'primeng/menubar';
 import { MessageModule } from 'primeng/message';
 import { PopoverModule } from 'primeng/popover';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ScrollerModule } from 'primeng/scroller';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { debounceTime, Subject, take } from 'rxjs';
 import * as packageJson from './../../../../package.json';
+import { BlaudirektService } from './data-access/blaudirekt.service';
 import { ElectronService } from './data-access/electron.service';
 import { FileService } from './data-access/file.service';
 import { ThemeService } from './data-access/theme.service';
 import { FileDialogComponent } from './dialogs/file.dialog';
-import { ScrollerModule } from 'primeng/scroller';
 
 @Component({
   selector: 'app-root',
@@ -62,6 +65,9 @@ export class AppComponent {
 
   private readonly query$ = new Subject<string>();
 
+  private readonly blaudirektService = inject(BlaudirektService);
+  private readonly oauthService = inject(OAuthService);
+  private readonly http = inject(HttpClient)
   constructor() {
     this._ngxTranslate.use('de-DE');
     this.fileService.connectQuery(this.query$.pipe(debounceTime(500)));
@@ -91,7 +97,8 @@ export class AppComponent {
   protected onCreateFile() {
     const ref = this.pDialog.open(FileDialogComponent, {
       data: null,
-      header: 'Datei erstellen'
+      header: 'Datei erstellen',
+      modal: true,
     });
 
     ref.onClose.pipe(take(1)).subscribe(result => {
@@ -109,7 +116,8 @@ export class AppComponent {
       data: {
         Headers: 'Detei bearbeiten',
         name: file.name
-      }
+      },
+      modal: true,
     });
 
     ref.onClose.pipe(take(1)).subscribe(result => {

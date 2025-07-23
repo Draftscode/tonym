@@ -7,6 +7,7 @@ import { registerDropboxHandler } from './dropbox/dropbox.controller';
 import { registerFileHandler } from './file.handle';
 import { registerGdvHandler } from './gdv/gdv.controller';
 import { registerPdfHandler } from './pdf';
+import { registerBlaudirektHandler } from './blaudirekt/blaudirekt.controller';
 
 
 let mainWindow: BrowserWindow | null;
@@ -89,6 +90,7 @@ app.whenReady().then(() => {
     registerPdfHandler();
     registerFileHandler();
     registerGdvHandler();
+    registerBlaudirektHandler();
 });
 
 app.on('window-all-closed', () => {

@@ -4,6 +4,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { TranslateLoader, TranslateModule } from "@ngx-translate/core";
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { provideOAuthClient } from 'angular-oauth2-oidc';
 import { MessageService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -34,6 +35,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withFetch()
     ),
+    provideOAuthClient(),
     provideAnimations(),
     providePrimeNG({
       theme: {
