@@ -1,6 +1,5 @@
 import { importJWK, SignJWT } from 'jose';
 import { GRANT } from './jwk';
-const KUNDENID = "5001900727";
 export class BlaudirektService {
 
     static async ask(path: string) {
@@ -14,7 +13,6 @@ export class BlaudirektService {
                     'Authorization': `Bearer ${token}`
                 },
             });
-            // console.log('R', response)
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(`Request failed with status ${response.status}: ${errorText}`);

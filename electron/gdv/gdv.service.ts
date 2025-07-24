@@ -1,5 +1,4 @@
 import { BrowserWindow } from "electron";
-const fetch = require('node-fetch');
 
 type GdvRow = {
     name: string;
@@ -68,10 +67,10 @@ export class GdvService {
     }
 }
 
-async function imageUrlToBase64(url: string) {
+async function imageUrlToBase64(url: string): Promise<string> {
     const response = await fetch(url);
-    const contentType = response.headers.get('content-type');
-    const buffer = await response.buffer(); // Note: node-fetch supports .buffer()
-    const base64 = buffer.toString('base64');
+    const contentType = response.headers.get('content-type') || 'application/octet-stream';
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
     return `data:${contentType};base64,${base64}`;
 }

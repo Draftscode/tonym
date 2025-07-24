@@ -1,0 +1,15 @@
+:host ::ng-deep .p-card-body {
+    max-width: 100%;
+    overflow: auto;
+}
+
+:host ::ng-deep {
+
+    .p-card-content,
+    .p-card-content {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+}

@@ -16,6 +16,6 @@
         "terminated":"wird gekündigt"
     },
     "date": {
-        "datetime": "dd.MM.YYYY HH:MM"
+        "datetime": "dd.mm.yy HH:MM"
     }
 }

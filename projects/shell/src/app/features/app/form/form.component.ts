@@ -15,7 +15,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { TableModule } from 'primeng/table';
 import { TextareaModule } from 'primeng/textarea';
-import { distinctUntilChanged, filter, lastValueFrom, map, take } from "rxjs";
+import { distinctUntilChanged, lastValueFrom, map, take } from "rxjs";
 import { FileService } from "../../../data-access/file.service";
 import { GdvMember } from "../../../data-access/gdv.service";
 import { PdfService } from "../../../data-access/pdf.service";
@@ -91,7 +91,8 @@ export type FormType = {
         SavingsPipe, ExistedPipe, NewPipe, MonthlyPipe
     ],
     providers: [CDatePipe],
-    templateUrl: 'form.component.html'
+    templateUrl: 'form.component.html',
+    styleUrl: 'form.component.scss',
 })
 export class FormComponent {
     private readonly pDialog = inject(DialogService);
@@ -99,7 +100,8 @@ export class FormComponent {
     protected readonly _suggestions = signal<string[]>([]);
     protected readonly _pdfService = inject(PdfService);
     private readonly _ngActiveRoute = inject(ActivatedRoute);
-    private readonly _filename = toSignal(this._ngActiveRoute.queryParams.pipe(map(q => q['filename']), filter(f => !!f), distinctUntilChanged()));
+    protected readonly _filename = toSignal(
+        this._ngActiveRoute.queryParams.pipe(map(q => q['filename']), distinctUntilChanged()));
     private readonly pMessage = inject(MessageService)
     private readonly fileService = inject(FileService);
     protected isNew = signal<boolean>(false);
@@ -111,17 +113,23 @@ export class FormComponent {
         groups: new FormArray<FormGroup<FormList>>([]),
     });
 
+    protected close(): void {
+        this.router.navigate([], { relativeTo: this._ngActiveRoute, queryParams: { filename: null } });
+    }
+
 
     protected onCreateFile() {
         const ref = this.pDialog.open(FileDialogComponent, {
             data: null,
             modal: true,
-            header: 'Datei erstellen'
+            closable: true,
+            header: 'Datei erstellen',
+            width: '420px',
         });
 
         ref.onClose.pipe(take(1)).subscribe(async result => {
             if (result?.type === 'manually') {
-                await this.fileService.writeFile(result.data.name, {});
+                await this.fileService.writeFile(result.data.name, result.data.contents);
                 this.router.navigate([], { relativeTo: this._ngActiveRoute, queryParams: { filename: result.data.name } });
             }
         });
@@ -221,7 +229,7 @@ export class FormComponent {
                 item.contribution = parseFloat(`${item.contribution}`);
                 item.oneTimePayment = parseFloat(`${item.oneTimePayment}`);
                 if (transformDate) {
-                    item.fromTo = this.cDatePipe.transform(item.fromTo, 'dd.MM.YYYY');
+                    item.fromTo = this.cDatePipe.transform(item.fromTo, 'dd.MM.yy');
                 }
             });
         });

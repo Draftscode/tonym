@@ -208,7 +208,6 @@ export class DropboxService {
 
 
             async function exchangeCodeForToken(authCode: string) {
-                const fetch = require('node-fetch');
 
                 const params = new URLSearchParams();
                 params.append('code', authCode);
@@ -258,7 +257,6 @@ export class DropboxService {
 
 
     static async revokeDropboxToken(accessToken: string) {
-        const fetch = require('node-fetch');
 
         const response = await fetch('https://api.dropboxapi.com/2/auth/token/revoke', {
             method: 'POST',

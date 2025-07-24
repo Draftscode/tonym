@@ -1,21 +1,42 @@
 <form [formGroup]="formGroup" (ngSubmit)="onClose()">
-
-    <div class="flex w-full flex-col">
-
-        @for(customer of blaudirektService.customers.value(); track customer.Id) {
+    <div class="flex flex-col gap-4">
+        <div class="inline-flex flex-col">
+            <label for="name">Dateiname *</label>
+            <input [invalid]="formGroup.controls.name.invalid" (change)="search(control.value)" #control id="name"
+                formControlName="name" pInputText [pKeyFilter]="blockChars" />
+            @if(formGroup.controls.name.hasError('required') && formGroup.controls.name.touched) {
+            <p-message [text]="'* Pflichtfeld'" [severity]="'error'" class="mt-2" />
+            }
+        </div>
+        <p-divider />
+        <div class="inline-flex flex-col w-full">
+            <label for="customer">Blaudirekt Kunden-Suche</label>
+            <p-autocomplete inputStyleClass="w-full" class="w-full" (onClear)="searchContracts()" [showClear]="true"
+                (onSelect)="searchContracts($event.value.Id)" [inputId]="'name'" formControlName="customer"
+                [optionLabel]="labelFn" [dropdown]="false" [minQueryLength]="1" (completeMethod)="search($event.query)"
+                [suggestions]="blaudirektService.customers.value()" />
+        </div>
+        @if(contracts().length) {
+        <div class="flex gap-2 items-center">
+            <p-checkbox [ngModelOptions]="{standalone: true}" [binary]="true" [ngModel]="isChecked()"
+                [indeterminate]="isIndeterminate()" (onChange)="toggleSelection()" inputId="select-all" />
+            <label for="select-all">Alle auswählen</label>
+        </div>
+        @for(contract of contracts(); track contract.Id) {
         <div class="flex w-full flex-col">
-            <p-radiobutton [ngModel]="customer" [inputId]="customer.Id" name="category" [value]="customer" />
-            <label [for]="customer.Id" class="ml-2">{{ customer.Person.Vorname }} {{customer.Person.Nachname}}</label>
+            <div class="flex gap-4 items-center">
+                <p-checkbox name="contracts" formControlName="selectedContracts" [value]="contract"
+                    [inputId]="''+contract.Id" />
+                <app-company [contract]="contract" />
+            </div>
         </div>
         }
-    </div>
-    <div class="inline-flex flex-col">
-        <label for="name">Dateiname</label>
-        <input (change)="search(control.value)" #control id="name" formControlName="name" pInputText
-            [pKeyFilter]="blockChars" />
+        <p-divider />
+        }
+
     </div>
     <p-divider />
     <div class="flex justify-end">
-        <p-button (onClick)="onClose()" label="Bestätigen" />
+        <p-button [disabled]="formGroup.invalid && formGroup.dirty" (onClick)="onClose()" label="Bestätigen" />
     </div>
 </form>

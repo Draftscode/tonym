@@ -14,10 +14,8 @@ export class PdfService {
     createPdf<T extends Content>(contents: T) {
         this.isLoading.set(true);
 
-        // const html = toPdf(contents);
-        const html = `<h1>PDF with Input</h1>
-        <label for="name">Name:</label>
-        <input type="text" id="name" value="John Doe" />`
+        const html = toPdf(contents);
+
         return this._electronService.handle<Uint8Array<ArrayBufferLike>>('api/pdf', html).pipe(
             finalize(() => this.isLoading.set(false)),
             tap(response => {

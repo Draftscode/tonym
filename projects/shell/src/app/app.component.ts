@@ -1,9 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { OAuthService } from 'angular-oauth2-oidc';
 import { MenuItem } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -22,11 +20,11 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { debounceTime, Subject, take } from 'rxjs';
 import * as packageJson from './../../../../package.json';
-import { BlaudirektService } from './data-access/blaudirekt.service';
 import { ElectronService } from './data-access/electron.service';
 import { FileService } from './data-access/file.service';
 import { ThemeService } from './data-access/theme.service';
 import { FileDialogComponent } from './dialogs/file.dialog';
+import { InitService } from './init.service';
 
 @Component({
   selector: 'app-root',
@@ -52,6 +50,8 @@ export class AppComponent {
   protected readonly _isLogVisible = signal<boolean>(false);
   protected readonly _logs = signal<string | null>(null);
 
+  private readonly initService = inject(InitService);
+
   protected readonly _sidebarItems = computed(() => this.fileService.files().map(i => {
     return {
       label: i.name,
@@ -65,12 +65,11 @@ export class AppComponent {
 
   private readonly query$ = new Subject<string>();
 
-  private readonly blaudirektService = inject(BlaudirektService);
-  private readonly oauthService = inject(OAuthService);
-  private readonly http = inject(HttpClient)
   constructor() {
     this._ngxTranslate.use('de-DE');
     this.fileService.connectQuery(this.query$.pipe(debounceTime(500)));
+
+    this.initService.initAll();
   }
 
   protected _toggleSidebar() {
@@ -94,16 +93,20 @@ export class AppComponent {
     this._electronService.closeApp();
   }
 
+  protected readonly isInitialized = this.initService.initialized;
+
   protected onCreateFile() {
     const ref = this.pDialog.open(FileDialogComponent, {
       data: null,
+      closable: true,
       header: 'Datei erstellen',
       modal: true,
+      width: '420px'
     });
 
     ref.onClose.pipe(take(1)).subscribe(result => {
       if (result?.type === 'manually') {
-        this.fileService.writeFile(result.data.name, {});
+        this.fileService.writeFile(result.data.name, result.data.contents);
       }
     });
   }
@@ -113,6 +116,7 @@ export class AppComponent {
     if (!file) { return; }
 
     const ref = this.pDialog.open(FileDialogComponent, {
+      closable: true,
       data: {
         Headers: 'Detei bearbeiten',
         name: file.name

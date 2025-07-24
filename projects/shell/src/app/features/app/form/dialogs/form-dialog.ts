@@ -6,10 +6,10 @@ import { ButtonModule } from "primeng/button";
 import { CheckboxModule } from "primeng/checkbox";
 import { DatePickerModule } from "primeng/datepicker";
 import { DividerModule } from "primeng/divider";
-import { DropdownModule } from "primeng/dropdown";
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { InputNumber } from "primeng/inputnumber";
 import { InputTextModule } from "primeng/inputtext";
+import { SelectModule } from "primeng/select";
 import { TooltipModule } from "primeng/tooltip";
 import { GdvMember, GdvService } from "../../../../data-access/gdv.service";
 
@@ -48,7 +48,7 @@ export type FormType = {
     selector: 'form-dialog',
     templateUrl: 'form-dialog.html',
     imports: [ReactiveFormsModule, CheckboxModule, ButtonModule, InputNumber, AutoCompleteModule, TooltipModule,
-        DividerModule, InputTextModule, DropdownModule, DatePickerModule, TranslateModule]
+        DividerModule, InputTextModule, SelectModule, DatePickerModule, TranslateModule]
 })
 export class FormDialogComponent {
     private readonly pDialogRef = inject<DynamicDialogRef<FormDialogComponent>>(DynamicDialogRef);

@@ -40,10 +40,10 @@ export class FileService {
     private readonly timestamp = signal<string>(new Date().toISOString());
 
     private readonly _files = resource({
-        request: () => {
+        params: () => {
             return { query: this.query(), timestamp: this.timestamp() }
         },
-        loader: ({ request }) => this.listFiles(request.query, request.timestamp),
+        loader: ({ params }) => this.listFiles(params.query, params.timestamp),
         defaultValue: [],
 
     });
