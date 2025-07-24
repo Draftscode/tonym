@@ -7,9 +7,7 @@ import { Pipe, PipeTransform } from "@angular/core";
 })
 export class CDatePipe extends DatePipe implements PipeTransform {
 
-    override transform(value: any, format?: string, timezone?: string, locale?: string): any {
-        // const formattedDate = super.transform(value, format, timezone, locale);
-        // do other formatting and return the value
+    override transform(value: any, format?: string): any {
         if (!value) { return ''; }
         let result = '';
         try {

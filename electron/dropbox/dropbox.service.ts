@@ -1,12 +1,12 @@
 import { BrowserWindow } from "electron";
 
 // Basti
-const CLIENT_ID = '57ar8edt0ljrz6u';
-const CLIENT_SECRET = '4j6otu8w8zl35iw';
+// const CLIENT_ID = '57ar8edt0ljrz6u';
+// const CLIENT_SECRET = '4j6otu8w8zl35iw';
 
 // Tony
-// const CLIENT_ID = 'brls8bkox6m412t';
-// const CLIENT_SECRET = 'bovs1s7mfl51thw';
+const CLIENT_ID = 'brls8bkox6m412t';
+const CLIENT_SECRET = 'bovs1s7mfl51thw';
 
 export class DropboxService {
     static async listDropboxFiles(accessToken: string, query: string | undefined = undefined) {

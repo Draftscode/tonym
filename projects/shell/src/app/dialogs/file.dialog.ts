@@ -1,4 +1,5 @@
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, effect, inject, signal } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { AutoCompleteModule } from "primeng/autocomplete";
 import { ButtonModule } from "primeng/button";
@@ -10,7 +11,6 @@ import { KeyFilterModule } from 'primeng/keyfilter';
 import { MessageModule } from "primeng/message";
 import { BlaudirectContract, BlaudirektCustomer, BlaudirektService } from "../data-access/blaudirekt.service";
 import { CompanyComponent } from "./company";
-import { toSignal } from "@angular/core/rxjs-interop";
 
 @Component({
     selector: 'file-dialog',
@@ -35,6 +35,14 @@ export class FileDialogComponent {
 
     constructor() {
         this.formGroup.controls.name.patchValue(this.pDialogConf.data?.name, { emitEvent: false });
+
+        effect(() => {
+            if (this.blaudirektService.isInitialized()) {
+                this.formGroup.controls.customer.enable();
+            } else {
+                this.formGroup.controls.customer.disable();
+            }
+        });
     }
 
     protected toggleSelection() {
@@ -76,6 +84,7 @@ export class FileDialogComponent {
         const raw = this.formGroup.getRawValue();
 
 
+        console.log(this.blaudirektService.customers.value())
         let contents = {};
         if (raw.customer?.Id) {
             const items = raw.selectedContracts?.map(contract => {
@@ -93,7 +102,7 @@ export class FileDialogComponent {
                     monthly: contract.Beitrag.Zahlweise === '1',
                     nr: contract.Versicherungsscheinnummer,
                     oneTimePayment: 0,
-                    party: "",
+                    party: raw.customer ? `${raw.customer?.Person.Vorname} ${raw.customer.Person.Nachname}` : '-',
                     scope: "",
                     suggestion: { value: 'acquisition', label: 'Übernahme' },
                     type: division?.Text

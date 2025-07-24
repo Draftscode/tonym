@@ -1,4 +1,4 @@
-import { effect, inject, Injectable, resource, signal } from "@angular/core";
+import { inject, Injectable, resource, signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { debounceTime, lastValueFrom, Subject } from "rxjs";
 import { ElectronService } from "./electron.service";
@@ -70,6 +70,7 @@ export class BlaudirektService {
     private readonly query = toSignal(this.search$.pipe(debounceTime(500)));
     readonly companies = signal<BlaudirektCompany[]>([]);
     readonly divisions = signal<BlaudirektDivision[]>([]);
+    readonly isInitialized = signal<boolean>(false);
 
     search(query: string) {
         this.search$.next(query);
@@ -112,10 +113,19 @@ export class BlaudirektService {
         return this._customers;
     }
 
+
+
     async init() {
-        return Promise.all([
-            this.searchCompanies(),
-            this.searchDivisions(),
-        ]);
+        try {
+            await Promise.all([
+                this.searchCompanies(),
+                this.searchDivisions(),
+            ]);
+        } catch (e) {
+            console.error('Failed to initialie Blaudirekt Connections', e);
+        } finally {
+            this.isInitialized.set(true);
+        }
+
     }
 }

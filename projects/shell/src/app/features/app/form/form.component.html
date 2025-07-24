@@ -21,7 +21,7 @@
     </div>
     }
     @else {
-    <form [formGroup]="_formGroup" class="inline-flex flex-col space-y-2 overflow-auto w-full">
+    <form [formGroup]="_formGroup" class="inline-flex flex-col space-y-2 overflow-auto w-full p-2">
         @if(_pdfService.isLoading()) {
         <p-progressbar mode="indeterminate" [style]="{ height: '6px' }" />
         }
@@ -34,7 +34,8 @@
                         <label for="firstname">Firma</label>
                         <input pSize="small" formControlName="company" pInputText id="company" />
                     </div>
-                    <p-button icon="pi pi-trash" severity="danger" size="small" (onClick)="removePerson(personIdx)" />
+                    <p-button icon="pi pi-trash" severity="warn" [text]="true" size="small"
+                        (onClick)="removePerson(personIdx)" />
                 </div>
                 <div class="inline-flex space-x-4">
                     <div class="inline-flex flex-col space-y-1">
@@ -84,7 +85,7 @@
                 <div class="flex items-center gap-1">
                     <span class="text-xl font-semibold">{{group.controls.name.value}}</span>
                     <p-button icon="pi pi-pencil" size="small" [text]="true" (onClick)="onEditGroup(groupIndex)" />
-                    <p-button icon="pi pi-trash" size="small" [text]="true" (onClick)="onRemoveGroup(groupIndex)" />
+                    <p-button icon="pi pi-trash" size="small" severity="warn" [text]="true" (onClick)="onRemoveGroup(groupIndex)" />
                 </div>
                 <p-table (onRowReorder)="onRowReorder()"
                     [value]="_formGroup.controls.groups.at(groupIndex).controls.items.controls"

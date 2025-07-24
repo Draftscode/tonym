@@ -28,7 +28,6 @@ export const appConfig: ApplicationConfig = {
     MessageService,
     DialogService,
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
-    // provideZoneChangeDetection({ eventCoalescing: true }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideHttpClient(
